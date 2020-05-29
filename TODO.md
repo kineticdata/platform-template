@@ -1,0 +1,31 @@
+* Fix issue with windows
+* Come up with a better way to create config files that can be used in scripts
+  * config-:envName.yaml
+  * in scripts, check to see if a config param was passed in and if so, read the file and use its values
+* move brian p's migration script into this repo
+* improve readme
+* build "Migrating Data" community article that links to this repo
+* reorganize repo as such
+```
+/config
+    /example.yaml
+    *gitignore the rest
+/export-data
+    /core
+    /task
+/example-scripts
+    /migrate-attribute-defs.rb
+    /other-example.rb
+    /complicated-migration
+        /dependencies.rb
+        /helper.rb
+        /migration.rb
+    /export-users-to-csv.rb
+    /clean-gdpr-data.rb
+    /export-form-sub
+/migration-scripts
+    /may-2020-migration.rb
+    /example-migration.rb        
+import.rb
+export.rb
+```
