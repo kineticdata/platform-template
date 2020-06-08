@@ -35,18 +35,25 @@ explain how to do that here...
 
 This will give you a baseline to begin building migrations from. (typically you'll want to export your current production environment).
 
-1. Export Production *(This creates 2 root directories "Core" and "Task"....)
+Get an inital Baseline for the respositiory using data from the production environmnent
+1. Export Production using export.rb *(This creates 2 root directories "Core" and "Task"....)
 2. Commit your changes into a version control system.
 ```bash
 git add .
 git commit -m "Initial commit of my template"
 ```
 
-3. Point export script at development
-4. check for differences (git diff)
-5. Copy / Paste the example migration script and modify to include the files that you want to include in your migration
-6. Run the migration script against a test environment
-7. Run against production
+Get an export from the development environment
+1. Point export script at the source server
+2. Export Environment using export.rb
+3. Check for differences (git diff)
+4. Add desired changes to the repositiory
+5. Commit changes.
+
+Promote Changes to a new Environment
+1. Point import script at the source server
+2. Run import script
+3. Validate Results
 
 
 ## Developing
