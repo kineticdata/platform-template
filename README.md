@@ -50,8 +50,8 @@ Configuration files should be store in in the /config directory
       "delete" : # {Import; Required} Defines if configurations in the import but absent on the destination server should be deleted from the destination sever.
     },
   "http_options" : {
-    "log_level" : # {Import; Required} Defines the log Level. Values are "stdout", "stderr"
-    "log_output" : # {Import; Required} Defines log output location.  Values are "error", "warn","info","debug"
+    "log_level" : # {Import; Required} Defines the log Level.  Values are "error", "warn","info","debug"
+    "log_output" : # {Import; Required} Defines log output location. Values are "stdout", "stderr" Values are "error", "warn","info","debug"
   }
 }
 ```
