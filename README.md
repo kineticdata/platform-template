@@ -50,8 +50,8 @@ Configuration files should be store in in the /config directory
       "delete" : # {Import; Required} Defines if configurations in the import but absent on the destination server should be deleted from the destination sever.
     },
   "http_options" : {
-    "log_level" : # {Import; Required} Defines the log Level
-    "log_output" : # {Import; Required} Defines log output location
+    "log_level" : # {Import; Required} Defines the log Level. Values are "stdout", "stderr"
+    "log_output" : # {Import; Required} Defines log output location.  Values are "error", "warn","info","debug"
   }
 }
 ```
@@ -60,7 +60,7 @@ Configuration files should be store in in the /config directory
 The naming convention of the cofig files can be useful to accurately and quickly identfy thier intended use.
 <<SERVER_NAME>_<<Import or Export>>_config.txt
 
-#### Import Config Example
+#### Export Config Example
 ```{
   "core" : {
     "api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/api/v1",
@@ -73,9 +73,6 @@ The naming convention of the cofig files can be useful to accurately and quickly
     "service_user_password" : "<<PASSWORD>>",
     "task_api_v2" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/task/app/api/v2"
   },
-  "options" : {
-      "delete" : false,
-    },
   "http_options" : {
     "log_level" : "info",
     "log_output" : "stderr"
