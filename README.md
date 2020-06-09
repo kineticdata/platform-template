@@ -43,14 +43,14 @@ git add .
 git commit -m "Initial commit of my template"
 ```
 
-Get an export from the development environment
+### Get an export from the development environment
 1. Point export script at the source server
 2. Export Environment using export.rb
 3. Check for differences (git diff)
 4. Add desired changes to the repositiory
 5. Commit changes.
 
-Promote Changes to a new Environment
+### Promote Changes to a new Environment
 1. Point import script at the source server
 2. Run import script
 3. Validate Results
