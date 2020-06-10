@@ -1,30 +1,54 @@
-# Action options must be passed as a JSON string
+# RUNNING THE SCRIPT:
+#   ruby export.rb -c "<<PATH/CONFIG_FILE.rb>>"
+#   ruby export.rb -c "config/foo-web-server.rb"
 #
-# Format with example values:
+# Example Config File Values (See Readme for additional details)
 #
 # {
-#   "core" => {
-#     "api" => "https://foo.web-server/app/api/v1",
-#     "agent_api" => "https://foo.web-server/app/components/agent/app/api/v1",
-#     "proxy_url" => "https://foo.web-server/app/components",
-#     "server" => "https://web-server",
-#     "space_slug" => "foo",
-#     "space_name" => "Foo",
-#     "service_user_username" => "service_user_username",
-#     "service_user_password" => "secret",
-#     "task_api_v1" => "https://foo.web-server/app/components/task/app/api/v1",
-#     "task_api_v2" => "https://foo.web-server/app/components/task/app/api/v2"
+#   "core" : {
+#     "api" : "https://foo.web-server/app/api/v1",
+#     "agent_api" : "https://foo.web-server/app/components/agent/app/api/v1",
+#     "proxy_url" : "https://foo.web-server/app/components",
+#     "server" : "https://web-server",
+#     "space_slug" : "foo",
+#     "space_name" : "Foo",
+#     "service_user_username" : "service_user_username",
+#     "service_user_password" : "secret",
+#     "task_api_v1" : "https://foo.web-server/app/components/task/app/api/v1",
+#     "task_api_v2" : "https://foo.web-server/app/components/task/app/api/v2"
 #   },
-#   "http_options" => {
-#     "log_level" => "info",
-#     "log_output" => "stderr"
+# "options" : {
+#      "SUBMISSIONS_TO_EXPORT" : [
+#        {"datastore" : true, "formSlug" : "request-type"},
+#        {"datastore" : true, "formSlug" : "alerts"}
+#      ],
+#      "REMOVE_DATA_PROPERTIES": [
+#        "createdAt",
+#        "createdBy",
+#        "updatedAt",
+#        "updatedBy",
+#        "closedAt",
+#        "closedBy",
+#        "submittedAt",
+#        "submittedBy",
+#        "id",
+#        "authStrategy",
+#        "key",
+#        "handle"
+#    },
+#      ]
+#   "http_options" : {
+#     "log_level" : "info",
+#     "log_output" : "stderr"
 #   }
 # }
 
 require 'logger'
 require 'json'
+require 'optparse'
+require 'kinetic_sdk'
 
-template_name = "platform-template-service-portal"
+template_name = "platform-template"
 
 logger = Logger.new(STDERR)
 logger.level = Logger::INFO
@@ -33,13 +57,28 @@ logger.formatter = proc do |severity, datetime, progname, msg|
   "[#{date_format}] #{severity}: #{msg}\n"
 end
 
-raise "Missing JSON argument string passed to template export script" if ARGV.empty?
-begin
-  vars = JSON.parse(ARGV[0])
-rescue => e
-  raise "Template #{template_name} repair error: #{e.inspect}"
-end
 
+# Determine the Present Working Directory
+pwd = File.expand_path(File.dirname(__FILE__))
+
+ARGV << '-h' if ARGV.empty?
+
+# The options specified on the command line will be collected in *options*.
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: example.rb [options]"
+
+  opts.on("-c", "--c CONFIG_FILE", "The Configuration file to use") do |config|
+    options["CONFIG_FILE"] = config
+  end
+  
+  # No argument, shows at tail.  This will print an options summary.
+  # Try it and see!
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+end.parse!
 
 # determine the directory paths
 platform_template_path = File.dirname(File.expand_path(__FILE__))
@@ -67,26 +106,6 @@ end
 # constants
 # ------------------------------------------------------------------------------
 
-# Configuration of which submissions should be exported
-SUBMISSIONS_TO_EXPORT = [
-  {"datastore" => true, "formSlug" => "notification-data"},
-  {"datastore" => true, "formSlug" => "notification-template-dates"}
-]
-
-REMOVE_DATA_PROPERTIES = [
-  "createdAt",
-  "createdBy",
-  "updatedAt",
-  "updatedBy",
-  "closedAt",
-  "closedBy",
-  "submittedAt",
-  "submittedBy",
-  "id",
-  "authStrategy",
-  "key",
-  "handle"
-]
 
 # ------------------------------------------------------------------------------
 # setup
@@ -95,11 +114,21 @@ REMOVE_DATA_PROPERTIES = [
 logger.info "Installing gems for the \"#{template_name}\" template."
 Dir.chdir(platform_template_path) { system("bundle", "install") }
 
-require 'kinetic_sdk'
+vars = {}
 
+# Read the config file specified in the command line into the variable "vars"
+if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
+  vars.merge!( JSON.parse(File.read(file)) )
+end
+
+# Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
   result[k.to_sym] = v
 end
+
+# Set variables based on values provided in the config file.
+SUBMISSIONS_TO_EXPORT = vars["options"]["SUBMISSIONS_TO_EXPORT"]
+REMOVE_DATA_PROPERTIES = vars["options"]["REMOVE_DATA_PROPERTIES"]
 
 # ------------------------------------------------------------------------------
 # core

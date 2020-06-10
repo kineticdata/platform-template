@@ -41,9 +41,11 @@
 require 'logger'
 require 'json'
 require 'rexml/document'
+require 'optparse'
+require 'kinetic_sdk'
 include REXML
 
-template_name = "platform-template-service-portal"
+template_name = "platform-template"
 
 logger = Logger.new(STDERR)
 logger.level = Logger::INFO
@@ -52,16 +54,33 @@ logger.formatter = proc do |severity, datetime, progname, msg|
   "[#{date_format}] #{severity}: #{msg}\n"
 end
 
-raise "Missing JSON argument string passed to template export script" if ARGV.empty?
-begin
-  vars = JSON.parse(ARGV[0])
-rescue => e
-  raise "Template #{template_name} repair error: #{e.inspect}"
-end
+#########################################
 
-# Set option values to default values if not included
-vars["options"] = !vars["options"].nil? ? vars["options"] : {}
-vars["options"]["delete"] = !vars["options"]["delete"].nil? ? vars["options"]["delete"] : false
+# Determine the Present Working Directory
+pwd = File.expand_path(File.dirname(__FILE__))
+
+ARGV << '-h' if ARGV.empty?
+
+# The options specified on the command line will be collected in *options*.
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: example.rb [options]"
+
+  opts.on("-c", "--c CONFIG_FILE", "The Configuration file to use") do |config|
+    options["CONFIG_FILE"] = config
+  end
+  
+  # No argument, shows at tail.  This will print an options summary.
+  # Try it and see!
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+#Now raise an exception if we have not found a CONFIG_FILE option
+raise OptionParser::MissingArgument if options["CONFIG_FILE"].nil?
+
 
 # determine the directory paths
 platform_template_path = File.dirname(File.expand_path(__FILE__))
@@ -72,43 +91,12 @@ task_path = File.join(platform_template_path, "task")
 # methods
 # ------------------------------------------------------------------------------
 
-# Removes discussion id attribute from a given model
-def remove_discussion_id_attribute(model)
-  if !model.is_a?(Array)
-    if model.has_key?("attributes")
-      scrubbed = model["attributes"].select do |attribute|
-        attribute["name"] != "Discussion Id"
-      end
-    end
-    model["attributes"] = scrubbed
-  end
-  return model
-end
 
 # ------------------------------------------------------------------------------
 # constants
 # ------------------------------------------------------------------------------
 
-# Configuration of which submissions should be exported
-SUBMISSIONS_TO_EXPORT = [
-  {"datastore" => true, "formSlug" => "campus"},
-  {"datastore" => true, "formSlug" => "request-type"}
-]
 
-REMOVE_DATA_PROPERTIES = [
-  "createdAt",
-  "createdBy",
-  "updatedAt",
-  "updatedBy",
-  "closedAt",
-  "closedBy",
-  "submittedAt",
-  "submittedBy",
-  "id",
-  "authStrategy",
-  "key",
-  "handle"
-]
 
 # ------------------------------------------------------------------------------
 # setup
@@ -117,17 +105,26 @@ REMOVE_DATA_PROPERTIES = [
 logger.info "Installing gems for the \"#{template_name}\" template."
 Dir.chdir(platform_template_path) { system("bundle", "install") }
 
-require 'kinetic_sdk'
-
-http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
-  result[k.to_sym] = v
-end
-
 
 
 # ------------------------------------------------------------------------------
 # core
 # ------------------------------------------------------------------------------
+vars = {}
+
+# Read the config file specified in the command line into the variable "vars"
+if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
+  vars.merge!( JSON.parse(File.read(file)) )
+end
+
+# Set http_options based on values provided in the config file.
+http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
+  result[k.to_sym] = v
+end
+
+# Set option values to default values if not included
+vars["options"] = !vars["options"].nil? ? vars["options"] : {}
+vars["options"]["delete"] = !vars["options"]["delete"].nil? ? vars["options"]["delete"] : false
 
 logger.info "Setting up the Core SDK"
 space_sdk = KineticSdk::Core.new({
@@ -137,14 +134,6 @@ space_sdk = KineticSdk::Core.new({
   password: vars["core"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{core_path}" })
 })
-
-# ------------------------------------------------------------------------------
-# Update Space
-# ------------------------------------------------------------------------------
-
-#Update Space
-space_sdk.update_space()
-
 
 # ------------------------------------------------------------------------------
 # Update Space Attributes
@@ -554,7 +543,7 @@ end
 # ------------------------------------------------------------------------------
 # import space webhooks
 # ------------------------------------------------------------------------------
-SourceSpaceWebhooksArray = []
+sourceSpaceWebhooksArray = []
 destinationSpaceWebhooksArray = JSON.parse(space_sdk.find_webhooks_on_space().content_string)['webhooks'].map{ |webhook| webhook['name']}
 
 Dir["#{core_path}/space/webhooks/*.json"].each{ |file|
@@ -564,7 +553,7 @@ Dir["#{core_path}/space/webhooks/*.json"].each{ |file|
   elsif
     space_sdk.add_webhook_on_space(webhook)
   end
-  SourceSpaceWebhooksArray.push(webhook['name'])
+  sourceSpaceWebhooksArray.push(webhook['name'])
 }
 
 # ------------------------------------------------------------------------------
@@ -573,7 +562,7 @@ Dir["#{core_path}/space/webhooks/*.json"].each{ |file|
 # ------------------------------------------------------------------------------
 
 destinationSpaceWebhooksArray.each do |webhook|
-  if vars["options"]["delete"] && !SourceSpaceWebhooksArray.include?(webhook)
+  if vars["options"]["delete"] && !sourceSpaceWebhooksArray.include?(webhook)
     space_sdk.delete_webhook_on_space(webhook)
   end
 end  
