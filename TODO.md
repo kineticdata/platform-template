@@ -8,6 +8,8 @@
 * Import_script.rb
 * --add import of form type into kapps
 * --space.json file will always be different.  How to address this?
+* --task categories are not currently migrated. Should they be migrated?
+* --should teams be migrated?
 * reorganize repo as such
 ```
 /config
