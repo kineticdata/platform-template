@@ -5,6 +5,8 @@
 * move brian p's migration script into this repo
 * improve readme
 * build "Migrating Data" community article that links to this repo
+* Import_script.rb
+* --add import of form type into kapps
 * reorganize repo as such
 ```
 /config
