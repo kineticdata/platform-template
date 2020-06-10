@@ -104,9 +104,15 @@ The naming convention of the cofig files can be useful to accurately and quickly
 ```
 ### Create the Repositiory
 
+1. Create a local directory
+2. Clone the respositiory
+```
+git clone https://github.com/kineticdata/platform-template.git
+```
+### Create Config Files
+Create config files in the "/config" directory for the source and destination servers using the examples above.
 
 ### Create the Baseline Repositiory
-
 Determine the current baseline for the repository.  This will typically be your production evironment.  This will give you a baseline to begin building migrations from. 
 
 1. Export Production using export.rb *(This creates 2 root directories "Core" and "Task"....)
