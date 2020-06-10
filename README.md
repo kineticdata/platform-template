@@ -28,25 +28,112 @@ Install gems with [Bundler](https://bundler.io/)
 bundle install
 ```
 
-### Build Config Files for dev and prod
+### Build Configuration Files for dev and prod
 explain how to do that here...
+#### Configuration File Location
+Configuration files should be store in in the /config directory
 
-### Compare Dev and Prod
+#### Configuration File Parameters
+```{
+  "core" : { 
+    "api" : # {Export and Import; Required} Defines the Server API URL
+    "agent_api" : # {Export and Import; Required} Defines the Agent API URL
+    "proxy_url" : # {Export and Import; Required} Defines the Proxy API URL
+    "server" : "# {Export and Import; Required} Defines the Server API URL
+    "space_slug" : # {Export and Import; Required} Defines Space Slug
+    "space_name" : # {Export and Import; Required} Defines the Space Name
+    "service_user_username" : # {Export and Import; Required} Defines the Username for Authentication
+    "service_user_password" : # {Export and Import; Required} Defines the Password for Authentication
+    "task_api_v2" : # {Export and Import; Required} Defines the Task Server API URL
+  },
+  "options" : {
+      "delete" : # {Import; Required} Defines if configurations in the import but absent on the destination server should be deleted from the destination sever.
+    },
+  "http_options" : {
+    "log_level" : # {Import; Required} Defines the log Level.  Values are "error", "warn","info","debug"
+    "log_output" : # {Import; Required} Defines log output location. Values are "stdout", "stderr" Values are "error", "warn","info","debug"
+  }
+}
+```
 
-This will give you a baseline to begin building migrations from. (typically you'll want to export your current production environment).
+#### Suggested Naming Convention
+The naming convention of the cofig files can be useful to accurately and quickly identfy thier intended use.
+<<SERVER_NAME>_<<Import or Export>>_config.txt
 
-1. Export Production *(This creates 2 root directories "Core" and "Task"....)
+#### Export Config Example
+```{
+  "core" : {
+    "api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/api/v1",
+    "agent_api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/agent/app/api/v1",
+    "proxy_url" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components",
+    "server" : "https://<<YOUR KINOPS SPACE>>.kinops.io/",
+    "space_slug" : "<<<SPACE NAME>>",
+    "space_name" : "SPACE SLUG",
+    "service_user_username" : "<<USER NAME>>",
+    "service_user_password" : "<<PASSWORD>>",
+    "task_api_v2" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/task/app/api/v2"
+  },
+  "http_options" : {
+    "log_level" : "info",
+    "log_output" : "stderr"
+  }
+}
+```
+
+#### Import Config Example
+```{
+  "core" : {
+    "api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/api/v1",
+    "agent_api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/agent/app/api/v1",
+    "proxy_url" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components",
+    "server" : "https://<<YOUR KINOPS SPACE>>.kinops.io/",
+    "space_slug" : "<<<SPACE NAME>>",
+    "space_name" : "SPACE SLUG",
+    "service_user_username" : "<<USER NAME>>",
+    "service_user_password" : "<<PASSWORD>>",
+    "task_api_v2" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/task/app/api/v2"
+  },
+  "options" : {
+      "delete" : false,
+    },
+  "http_options" : {
+    "log_level" : "info",
+    "log_output" : "stderr"
+  }
+}
+```
+### Create the Repositiory
+
+
+### Create the Baseline Repositiory
+
+Determine the current baseline for the repository.  This will typically be your production evironment.  This will give you a baseline to begin building migrations from. 
+
+1. Export Production using export.rb *(This creates 2 root directories "Core" and "Task"....)
 2. Commit your changes into a version control system.
 ```bash
 git add .
 git commit -m "Initial commit of my template"
+git push
 ```
 
-3. Point export script at development
-4. check for differences (git diff)
-5. Copy / Paste the example migration script and modify to include the files that you want to include in your migration
-6. Run the migration script against a test environment
-7. Run against production
+### Compare Dev and Prod
+
+
+### Get an export from the development environment
+1. Point export script at the source server
+2. Export Environment using export.rb
+```
+ruby export.rb -c "config/foo-web-server.rb"
+```
+3. Check for differences (git diff)
+4. Add desired changes to the repositiory
+5. Commit changes.
+
+### Promote Changes to a new Environment
+1. Point import script at the source server
+2. Run import script
+3. Validate Results
 
 
 ## Developing
