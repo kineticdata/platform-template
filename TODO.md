@@ -7,6 +7,7 @@
 * build "Migrating Data" community article that links to this repo
 * Import_script.rb
 * --add import of form type into kapps
+* --space.json file will always be different.  How to address this?
 * reorganize repo as such
 ```
 /config
