@@ -102,22 +102,30 @@ The naming convention of the cofig files can be useful to accurately and quickly
   }
 }
 ```
+### Create the Repositiory
 
-### Compare Dev and Prod
 
-This will give you a baseline to begin building migrations from. (typically you'll want to export your current production environment).
+### Create the Baseline Repositiory
 
-Get an inital Baseline for the respositiory using data from the production environmnent
+Determine the current baseline for the repository.  This will typically be your production evironment.  This will give you a baseline to begin building migrations from. 
+
 1. Export Production using export.rb *(This creates 2 root directories "Core" and "Task"....)
 2. Commit your changes into a version control system.
 ```bash
 git add .
 git commit -m "Initial commit of my template"
+git push
 ```
+
+### Compare Dev and Prod
+
 
 ### Get an export from the development environment
 1. Point export script at the source server
 2. Export Environment using export.rb
+```
+ruby export.rb -c "config/foo-web-server.rb"
+```
 3. Check for differences (git diff)
 4. Add desired changes to the repositiory
 5. Commit changes.
