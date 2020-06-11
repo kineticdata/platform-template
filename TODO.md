@@ -1,3 +1,6 @@
+## Questions
+* why do we have "api" "agent_api" and "proxy_url" in the configuration?
+* why not just include the subdomain in the URL.  (Other SDK Examples do not inlcude it)
 * Fix issue with windows
 * Come up with a better way to create config files that can be used in scripts
   * config-:envName.yaml
