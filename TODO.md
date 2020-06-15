@@ -1,3 +1,6 @@
+## Questions
+* why do we have "api" "agent_api" and "proxy_url" in the configuration?
+* why not just include the subdomain in the URL.  (Other SDK Examples do not inlcude it)
 * Fix issue with windows
 * Come up with a better way to create config files that can be used in scripts
   * config-:envName.yaml
@@ -5,6 +8,11 @@
 * move brian p's migration script into this repo
 * improve readme
 * build "Migrating Data" community article that links to this repo
+* Import_script.rb
+* --add import of form type into kapps
+* --space.json file will always be different.  How to address this?
+* --task categories are not currently migrated. Should they be migrated?
+* --should teams be migrated?
 * reorganize repo as such
 ```
 /config
