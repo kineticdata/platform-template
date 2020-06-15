@@ -1,0 +1,34 @@
+---
+core:
+  # server_url: https://<SPACE>.kinops.io  OR https://<SERVER_NAME>.com/kinetic/<SPACE_SLUG>
+  server_url: https://web-server.com
+  space_slug: <SPACE_SLUG>
+  space_name: <SPACE_NAME>
+  service_user_username: <USER_NAME>
+  service_user_password: <PASSWORD>
+options:
+  SUBMISSIONS_TO_EXPORT:
+  - datastore: true
+    formSlug: <FORM_SLUG>
+
+  REMOVE_DATA_PROPERTIES:
+  - createdAt
+  - createdBy
+  - updatedAt
+  - updatedBy
+  - closedAt
+  - closedBy
+  - submittedAt
+  - submittedBy
+  - id
+  - authStrategy
+  - key
+  - handle
+task:
+  # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic/kinetic-task
+  server_url: https://web-server.com
+  service_user_username: <USER_NAME>
+  service_user_password: <PASSWORD>
+http_options:
+  log_level: info
+  log_output: stderr
