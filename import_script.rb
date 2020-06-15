@@ -12,29 +12,31 @@
 
 # TODO
 
-# Action options must be passed as a JSON string
+# RUNNING THE SCRIPT:
+#   ruby import_script.rb -c "<<Dir/CONFIG_FILE.rb>>"
+#   ruby import_script -c "config/foo-web-server.rb"
 #
-# Format with example values:
+# Example Config File Values (See Readme for additional details)
 #
 # {
-#   "core" => {
-#     "api" => "https://foo.web-server/app/api/v1",
-#     "agent_api" => "https://foo.web-server/app/components/agent/app/api/v1",
-#     "proxy_url" => "https://foo.web-server/app/components",
-#     "server" => "https://web-server",
-#     "space_slug" => "foo",
-#     "space_name" => "Foo",
-#     "service_user_username" => "service_user_username",
-#     "service_user_password" => "secret",
-#     "task_api_v1" => "https://foo.web-server/app/components/task/app/api/v1",
-#     "task_api_v2" => "https://foo.web-server/app/components/task/app/api/v2"
+#   "core" : {
+#     "api" : "https://foo.web-server/app/api/v1",
+#     "agent_api" : "https://foo.web-server/app/components/agent/app/api/v1",
+#     "proxy_url" : "https://foo.web-server/app/components",
+#     "server" : "https://web-server",
+#     "space_slug" : "foo",
+#     "space_name" : "Foo",
+#     "service_user_username" : "service_user_username",
+#     "service_user_password" : "secret",
+#     "task_api_v1" : "https://foo.web-server/app/components/task/app/api/v1",
+#     "task_api_v2" : "https://foo.web-server/app/components/task/app/api/v2"
 #   },
-#   "options" => {
-#      "delete" => false
+#   "options" : {
+#      "delete" : false
 #    }
-#   "http_options" => {
-#     "log_level" => "info",
-#     "log_output" => "stderr"
+#   "http_options" : {
+#     "log_level" : "info",
+#     "log_output" : "stderr"
 #   }
 # }
 
@@ -111,10 +113,11 @@ Dir.chdir(platform_template_path) { system("bundle", "install") }
 # core
 # ------------------------------------------------------------------------------
 vars = {}
-
 # Read the config file specified in the command line into the variable "vars"
 if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
-  vars.merge!( JSON.parse(File.read(file)) )
+  vars.merge!( YAML.load(File.read("#{platform_template_path}/#{options['CONFIG_FILE']}")) )
+elsif
+  raise "Config file not found: #{file}"
 end
 
 # Set http_options based on values provided in the config file.
@@ -126,14 +129,25 @@ end
 vars["options"] = !vars["options"].nil? ? vars["options"] : {}
 vars["options"]["delete"] = !vars["options"]["delete"].nil? ? vars["options"]["delete"] : false
 
-logger.info "Setting up the Core SDK"
+logger.info "Importing using the config: #{vars}"
+
+
 space_sdk = KineticSdk::Core.new({
-  space_server_url: vars["core"]["server"],
+  space_server_url: vars["core"]["server_url"],
   space_slug: vars["core"]["space_slug"],
   username: vars["core"]["service_user_username"],
   password: vars["core"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{core_path}" })
 })
+
+puts "Are you sure you want to perform an import of data to #{vars["core"]["server_url"]}? (Y/N)"
+case (gets.downcase.chomp)
+when 'y'
+  puts "Continuing Import"
+else
+  raise "Exiting Import"
+end
+###################################################################
 
 # ------------------------------------------------------------------------------
 # Update Space Attributes
@@ -631,9 +645,9 @@ end
 # ------------------------------------------------------------------------------
 
 task_sdk = KineticSdk::Task.new({
-  app_server_url: "#{vars["core"]["proxy_url"]}/task",
-  username: vars["core"]["service_user_username"],
-  password: vars["core"]["service_user_password"],
+  app_server_url: "#{vars["task"]["server_url"]}",
+  username: vars["task"]["service_user_username"],
+  password: vars["task"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{task_path}" })
 })
 

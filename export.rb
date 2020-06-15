@@ -118,7 +118,8 @@ vars = {}
 
 # Read the config file specified in the command line into the variable "vars"
 if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
-  vars.merge!( JSON.parse(File.read(file)) )
+  puts "file #{file}"
+  vars.merge!( YAML.load(File.read(file)) )
 end
 
 # Set http_options based on values provided in the config file.
@@ -138,13 +139,28 @@ logger.info "Removing files and folders from the existing \"#{template_name}\" t
 FileUtils.rm_rf Dir.glob("#{core_path}/*")
 
 logger.info "Setting up the Core SDK"
+
+#https://peoc3t.kineticdata.com/kinetic/chs/app/api/v1/space?export=true
+puts vars["kinops-server"] || false
+puts "#{vars}"
+puts "#{vars["core"]["server"]}"
+puts "#{vars["core"]["server"]}/#{vars['core']['space_slug']}"
+
+space_server_url = "#{vars["core"]["server_url"]}"
+  
+puts space_server_url
+  
+
+
+
 space_sdk = KineticSdk::Core.new({
-  space_server_url: vars["core"]["server"],
+  space_server_url: space_server_url,
   space_slug: vars["core"]["space_slug"],
   username: vars["core"]["service_user_username"],
   password: vars["core"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{core_path}" })
 })
+puts space_sdk
 
 # fetch export from core service and write to export directory
 logger.info "Exporting the core components for the \"#{template_name}\" template."
@@ -173,9 +189,9 @@ end
 if space.has_key?("platformComponents")
   if space["platformComponents"].has_key?("task")
     space["platformComponents"].delete("task")
-  end
-  (space["platformComponents"]["agents"] || []).each do |agent|
-    space["platformComponents"]["agents"]["url"] = ""
+  end 
+  (space["platformComponents"]["agents"] || []).each_with_index do |agent,idx|
+    space["platformComponents"]["agents"][idx]["url"] = ""
   end
 end
 # rewrite the space file
@@ -236,9 +252,9 @@ logger.info "Removing files and folders from the existing \"#{template_name}\" t
 FileUtils.rm_rf Dir.glob("#{task_path}/*")
 
 task_sdk = KineticSdk::Task.new({
-  app_server_url: "#{vars["core"]["proxy_url"]}/task",
-  username: vars["core"]["service_user_username"],
-  password: vars["core"]["service_user_password"],
+  app_server_url: "#{vars["task"]["server_url"]}",
+  username: vars["task"]["service_user_username"],
+  password: vars["task"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{task_path}" })
 })
 
