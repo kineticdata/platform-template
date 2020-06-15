@@ -4,44 +4,45 @@
 #
 # Example Config File Values (See Readme for additional details)
 #
-# {
-#   "core" : {
-#     "api" : "https://foo.web-server/app/api/v1",
-#     "agent_api" : "https://foo.web-server/app/components/agent/app/api/v1",
-#     "proxy_url" : "https://foo.web-server/app/components",
-#     "server" : "https://web-server",
-#     "space_slug" : "foo",
-#     "space_name" : "Foo",
-#     "service_user_username" : "service_user_username",
-#     "service_user_password" : "secret",
-#     "task_api_v1" : "https://foo.web-server/app/components/task/app/api/v1",
-#     "task_api_v2" : "https://foo.web-server/app/components/task/app/api/v2"
-#   },
-# "options" : {
-#      "SUBMISSIONS_TO_EXPORT" : [
-#        {"datastore" : true, "formSlug" : "request-type"},
-#        {"datastore" : true, "formSlug" : "alerts"}
-#      ],
-#      "REMOVE_DATA_PROPERTIES": [
-#        "createdAt",
-#        "createdBy",
-#        "updatedAt",
-#        "updatedBy",
-#        "closedAt",
-#        "closedBy",
-#        "submittedAt",
-#        "submittedBy",
-#        "id",
-#        "authStrategy",
-#        "key",
-#        "handle"
-#    },
-#      ]
-#   "http_options" : {
-#     "log_level" : "info",
-#     "log_output" : "stderr"
-#   }
-# }
+# 
+=begin yml config file example
+
+  ---
+  core:
+    # server_url: https://<SPACE>.kinops.io  OR https://<SERVER_NAME>.com/kinetic/<SPACE_SLUG>
+    server_url: https://web-server.com
+    space_slug: <SPACE_SLUG>
+    space_name: <SPACE_NAME>
+    service_user_username: <USER_NAME>
+    service_user_password: <PASSWORD>
+  options:
+    SUBMISSIONS_TO_EXPORT:
+    - datastore: true
+      formSlug: <FORM_SLUG>
+
+    REMOVE_DATA_PROPERTIES:
+    - createdAt
+    - createdBy
+    - updatedAt
+    - updatedBy
+    - closedAt
+    - closedBy
+    - submittedAt
+    - submittedBy
+    - id
+    - authStrategy
+    - key
+    - handle
+  task:
+    # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic/kinetic-task
+    server_url: https://web-server.com
+    service_user_username: <USER_NAME>
+    service_user_password: <PASSWORD>
+  http_options:
+    log_level: info
+    log_output: stderr
+
+=end
 
 require 'logger'
 require 'json'
