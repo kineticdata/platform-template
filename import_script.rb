@@ -1,5 +1,3 @@
-#Updated 2020-06-01 By Brian Peterson
-
 # NOTES
 # This is a migration tool not an installation tool.  There are certain expectations that the destination is configured and working.
 # Agent Server(s) must be added ahead of migration.  /space/settings/platformComponents/agents
@@ -484,24 +482,27 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   # ------------------------------------------------------------------------------
   # Migrate Form Attribute Definitions
   # ------------------------------------------------------------------------------
-  sourceFormAttributeArray = []
-  destinationFormAttributeArray = JSON.parse(space_sdk.find_form_attribute_definitions(kapp['slug']).content_string)['formAttributeDefinitions'].map { |definition|  definition['name']}
-  formAttributeDefinitions = JSON.parse(File.read("#{core_path}/space/kapps/#{kapp['slug']}/formAttributeDefinitions.json"))
+  
+  if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/formAttributeDefinitions.json")
+    sourceFormAttributeArray = []
+    destinationFormAttributeArray = JSON.parse(space_sdk.find_form_attribute_definitions(kapp['slug']).content_string)['formAttributeDefinitions'].map { |definition|  definition['name']}
+    formAttributeDefinitions = JSON.parse(File.read(file))
+    formAttributeDefinitions.each { |attribute|
+        if destinationFormAttributeArray.include?(attribute['name'])
+          space_sdk.update_form_attribute_definition(kapp['slug'], attribute['name'], attribute)
+        else
+          space_sdk.add_form_attribute_definition(kapp['slug'], attribute['name'], attribute['description'], attribute['allowsMultiple'])
+        end
+        sourceFormAttributeArray.push(attribute['name'])
+    }   
 
-  formAttributeDefinitions.each { |attribute|
-      if destinationFormAttributeArray.include?(attribute['name'])
-        space_sdk.update_form_attribute_definition(kapp['slug'], attribute['name'], attribute)
-      else
-        space_sdk.add_form_attribute_definition(kapp['slug'], attribute['name'], attribute['description'], attribute['allowsMultiple'])
+    destinationFormAttributeArray.each { | attribute |
+      if vars["options"]["delete"] && !sourceFormAttributeArray.include?(attribute)
+          space_sdk.delete_form_attribute_definition(kapp['slug'],attribute)
       end
-      sourceFormAttributeArray.push(attribute['name'])
-  }   
+    }
+  end
 
-  destinationFormAttributeArray.each { | attribute |
-    if vars["options"]["delete"] && !sourceFormAttributeArray.include?(attribute)
-        space_sdk.delete_form_attribute_definition(kapp['slug'],attribute)
-    end
-  }
 
   # ------------------------------------------------------------------------------
   # Migrate Security Policy Definitions
