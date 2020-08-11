@@ -148,7 +148,6 @@ else
 end
 
 ###################################################################
-
 # ------------------------------------------------------------------------------
 # Update Space Attributes
 # ------------------------------------------------------------------------------
@@ -282,8 +281,8 @@ destinationDatastoreAttributeArray.each { | spaceAttribute |
 # ------------------------------------------------------------------------------
 
 sourceSecurityPolicyArray = []
-
 destinationSecurityPolicyArray = JSON.parse(space_sdk.find_space_security_policy_definitions().content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
+
 if File.file?(file = "#{core_path}/space/securityPolicyDefinitions.json")
   securityPolicyDefinitions = JSON.parse(File.read(file))
   securityPolicyDefinitions.each { |attribute|
@@ -423,23 +422,25 @@ end
 # import kapp data
 # ------------------------------------------------------------------------------
 
-Dir["#{core_path}/space/kapps/*"].each { |file|
-  if File.directory?(file)
+kapps_array = []
+Dir["#{core_path}/space/kapps/*"].each { |file|   
+  if File.file?(file) or ( File.directory?(file) and File.file?(file = "#{file}.json") ) # If the file is a file or a dir with a corresponding json file
+    kapp = JSON.parse( File.read(file) )
+    kappExists = space_sdk.find_kapp(kapp['slug']).code.to_i == 200  
+    if kappExists
+      space_sdk.update_kapp(kapp['slug'], kapp)
+    else
+      space_sdk.add_kapp(kapp['name'], kapp['slug'], kapp)
+    end
+  else # Else file is a dir w/o a corresponding jsone file
     kapp_slug = file.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last
     kapp = {}
-    kapp['slug'] = kapp_slug
-  else
-    kapp = JSON.parse(File.read(file))
+    kapp['slug'] = kapp_slug # set kapp_slug to dir name
   end
-  
-  kappExists = space_sdk.find_kapp(kapp['slug']).code.to_i == 200
-  
-  if kappExists
-    space_sdk.update_kapp(kapp['slug'], kapp)
-  else
-    space_sdk.add_kapp(kapp['name'], kapp['slug'], kapp)
-  end
-
+   
+  next if kapps_array.include?(kapp['slug']) # If the loop has already iterated over the kapp from the kapp file or the kapp dir skip the iteration
+  kapps_array.push(kapp['slug']) # Append the kapp_slug to an array so a duplicate iteration doesn't occur
+      
   # ------------------------------------------------------------------------------
   # Migrate Kapp Attribute Definitions
   # ------------------------------------------------------------------------------
