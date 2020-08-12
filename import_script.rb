@@ -17,7 +17,6 @@
 # Example Config File Values (See Readme for additional details)
 #
 =begin yml config file example
-
   ---
   core:
     # server_url: https://<SPACE>.kinops.io  OR https://<SERVER_NAME>.com/kinetic/<SPACE_SLUG>
@@ -36,7 +35,6 @@
   http_options:
     log_level: info
     log_output: stderr
-
 =end
 
 require 'logger'
@@ -417,13 +415,18 @@ destinationTeamsArray.each do |team|
   end
 end
 
-
 # ------------------------------------------------------------------------------
 # import kapp data
 # ------------------------------------------------------------------------------
 
 kapps_array = []
 Dir["#{core_path}/space/kapps/*"].each { |file|   
+  kapp_slug = file.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+  next if kapps_array.include?(kapp_slug) # If the loop has already iterated over the kapp from the kapp file or the kapp dir skip the iteration
+  kapps_array.push(kapp_slug) # Append the kapp_slug to an array so a duplicate iteration doesn't occur
+  kapp = {}
+  kapp['slug'] = kapp_slug # set kapp_slug
+    
   if File.file?(file) or ( File.directory?(file) and File.file?(file = "#{file}.json") ) # If the file is a file or a dir with a corresponding json file
     kapp = JSON.parse( File.read(file) )
     kappExists = space_sdk.find_kapp(kapp['slug']).code.to_i == 200  
@@ -432,15 +435,8 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     else
       space_sdk.add_kapp(kapp['name'], kapp['slug'], kapp)
     end
-  else # Else file is a dir w/o a corresponding jsone file
-    kapp_slug = file.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last
-    kapp = {}
-    kapp['slug'] = kapp_slug # set kapp_slug to dir name
-  end
-   
-  next if kapps_array.include?(kapp['slug']) # If the loop has already iterated over the kapp from the kapp file or the kapp dir skip the iteration
-  kapps_array.push(kapp['slug']) # Append the kapp_slug to an array so a duplicate iteration doesn't occur
-      
+  end 
+
   # ------------------------------------------------------------------------------
   # Migrate Kapp Attribute Definitions
   # ------------------------------------------------------------------------------
@@ -787,3 +783,4 @@ destinationtrees.each { | tree |
 # ------------------------------------------------------------------------------
 
 logger.info "Finished importing the \"#{template_name}\" forms."
+
