@@ -751,7 +751,7 @@ destinationPolicyRuleArray.each { |rule|
 # identify Trees and Routines on destination
 destinationtrees = []
 trees = JSON.parse(task_sdk.find_trees().content_string)
-trees['trees'].each { |tree|
+Array(trees['trees']).each { |tree|
   destinationtrees.push( tree['title'] )
 }
 
@@ -787,3 +787,5 @@ destinationtrees.each { | tree |
 # ------------------------------------------------------------------------------
 
 logger.info "Finished importing the \"#{template_name}\" forms."
+
+
