@@ -9,9 +9,9 @@ This repo should be forked and renamed to something like "platform-template-my-i
 
 The scripts in this repository are examples that are meant to be tweaked to your exact needs. Typically customers want to have the following types of scripts:
 
-* export: for exporting an entire environment
-* import: for seeding a brand new environment
-* migrate: custom scripts for performing incremental migrations from one environment to another.
+* export: for exporting an entire environment.
+* import: for performing incremental migrations from one environment to another.
+* install: for seeding a brand new environment **CAUTION** This will delete an existing space and add a new one.  Submissions and other data will be lost.
 
 ## Requirements
 
@@ -33,75 +33,56 @@ explain how to do that here...
 #### Configuration File Location
 Configuration files should be store in in the /config directory
 
-#### Configuration File Parameters
-```{
-  "core" : { 
-    "api" : # {Export and Import; Required} Defines the Server API URL
-    "agent_api" : # {Export and Import; Required} Defines the Agent API URL
-    "proxy_url" : # {Export and Import; Required} Defines the Proxy API URL
-    "server" : "# {Export and Import; Required} Defines the Server API URL
-    "space_slug" : # {Export and Import; Required} Defines Space Slug
-    "space_name" : # {Export and Import; Required} Defines the Space Name
-    "service_user_username" : # {Export and Import; Required} Defines the Username for Authentication
-    "service_user_password" : # {Export and Import; Required} Defines the Password for Authentication
-    "task_api_v2" : # {Export and Import; Required} Defines the Task Server API URL
-  },
-  "options" : {
-      "delete" : # {Import; Required} Defines if configurations in the import but absent on the destination server should be deleted from the destination sever.
-    },
-  "http_options" : {
-    "log_level" : # {Import; Required} Defines the log Level.  Values are "error", "warn","info","debug"
-    "log_output" : # {Import; Required} Defines log output location. Values are "stdout", "stderr" Values are "error", "warn","info","debug"
-  }
-}
-```
+#### Configuration File 
+Yaml configuration files are used for the Export and Import Scripts. Example configuration files can be found in the /config folder.
 
-#### Suggested Naming Convention
+##### Suggested Naming Convention
 The naming convention of the cofig files can be useful to accurately and quickly identfy thier intended use.
-<<SERVER_NAME>_<<Import or Export>>_config.txt
+<<SERVER_NAME>_<<Import or Export>>_config.yml
 
-#### Export Config Example
-```{
-  "core" : {
-    "api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/api/v1",
-    "agent_api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/agent/app/api/v1",
-    "proxy_url" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components",
-    "server" : "https://<<YOUR KINOPS SPACE>>.kinops.io/",
-    "space_slug" : "<<<SPACE NAME>>",
-    "space_name" : "SPACE SLUG",
-    "service_user_username" : "<<USER NAME>>",
-    "service_user_password" : "<<PASSWORD>>",
-    "task_api_v2" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/task/app/api/v2"
-  },
-  "http_options" : {
-    "log_level" : "info",
-    "log_output" : "stderr"
-  }
-}
-```
+##### Export and Import Config File Parameters
+core:
+  server_url: # https://<SPACE>.kinops.io  OR https://<SERVER_NAME>.com/kinetic/<SPACE_SLUG>
+  space_slug: # SPACE_SLUG of the environment
+  space_name: # SPACE_NAME of the environment
+  service_user_username: # Username of a Space Admin
+  service_user_password: # Password the Space Admin
 
-#### Import Config Example
-```{
-  "core" : {
-    "api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/api/v1",
-    "agent_api" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/agent/app/api/v1",
-    "proxy_url" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components",
-    "server" : "https://<<YOUR KINOPS SPACE>>.kinops.io/",
-    "space_slug" : "<<<SPACE NAME>>",
-    "space_name" : "SPACE SLUG",
-    "service_user_username" : "<<USER NAME>>",
-    "service_user_password" : "<<PASSWORD>>",
-    "task_api_v2" : "https://<<YOUR KINOPS SPACE>>.kinops.io/app/components/task/app/api/v2"
-  },
-  "options" : {
-      "delete" : false,
-    },
-  "http_options" : {
-    "log_level" : "info",
-    "log_output" : "stderr"
-  }
-}
-```
+task:
+  server_url: # https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic/kinetic-task
+  space_slug: # SPACE_SLUG of the environment
+  space_name: # SPACE_NAME of the environment
+http_options:
+  log_level: # `debug`, `info`, `warn`, `error`, or `off`
+  log_output: #  `stdout` or `stderr`
+
+##### Export Only Config File Parameters
+
+options:
+  SUBMISSIONS_TO_EXPORT: 
+  - datastore: # true or false: true for datastore forms false for regular form data exports
+    formSlug: # Slug of the datastore or form to have submissions exported
+
+  REMOVE_DATA_PROPERTIES: # The listed properties will be removed the form definition
+  - createdAt
+  - createdBy
+  - updatedAt
+  - updatedBy
+  - closedAt
+  - closedBy
+  - submittedAt
+  - submittedBy
+  - id
+  - authStrategy
+  - key
+  - handle
+
+##### Import Only Config File Parameters
+options:
+  delete: true
+
+## Setup
+
 ### Create the Repositiory
 
 1. Create a local directory
