@@ -137,12 +137,14 @@ space_sdk = KineticSdk::Core.new({
   options: http_options.merge({ export_directory: "#{core_path}" })
 })
 
-puts "Are you sure you want to perform an import of data to #{vars["core"]["server_url"]}? (Y/N)"
+puts "Are you sure you want to perform an import of data to #{vars["core"]["server_url"]}? [Y/N]"
+STDOUT.flush
 case (gets.downcase.chomp)
 when 'y'
   puts "Continuing Import"
+  STDOUT.flush
 else
-  raise "Exiting Import"
+  abort "Exiting Import"
 end
 
 ###################################################################
