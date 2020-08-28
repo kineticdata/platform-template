@@ -735,17 +735,14 @@ g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
   end
 }
 
-raise "end"
+
 # ------------------------------------------------------------------------------
 # Import Task Trees and Routines
 # ------------------------------------------------------------------------------
-
 Dir["#{task_path}/sources/*.json"].each {|source|
   body = JSON.parse(File.read(source))
   source_file_name = source.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
   source_name = body['name']
-
-
 
   logger.info "Importing Trees in #{source_name} source the for #{vars["core"]["space_slug"]}"
   file_path = "#{task_path}/sources/#{source_file_name}/*.xml"
@@ -757,18 +754,49 @@ Dir["#{task_path}/sources/*.json"].each {|source|
       tree_file = File.new(file_path, "rb")
       task_sdk.import_tree(tree_file, true)
     elsif type=="deleted"
+      # Split name at '.' and get first value
+      # Replace '---' with >
+      # Replace '-' with space
+      # Join modified data back with a space.
+      group_name = file_name.split('.').first.split('-').map(&:capitalize).join(' ')
+      #group_name = file_name.split('.').first.gsub('---', ' > ').split('-').map(&:capitalize).join(' ')
       delete_tree = {
              "source_name" => source_name,
-             "group_name" =>  file_name.split('.').first.gsub('---', ' > ').capitalize(),
+             "group_name" =>  group_name,
              "tree_name" => file_name.split('.').last.capitalize()
            }
       task_sdk.delete_tree(delete_tree)
     end
-
   }
-
 }
+
+
+# ------------------------------------------------------------------------------
+# Import Handlers
+# ------------------------------------------------------------------------------
+logger.info "Importing Handlers"
+
+file_path ="#{task_path}/handlers/*.zip"
+sourceHandlers = []
+destinationHandlers = JSON.parse(task_sdk.find_handlers().content_string)['handlers'].map{ |handler| handler['definitionId']}
+g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
+  type = file_diff.type
+  if type=="modified" || type=="new"
+    logger.info path = "#{pwd}/#{file_diff.path}"
+    file = File.new(path, "rb")
+    task_sdk.import_handler(file, true)
+  elsif type=="deleted"
+    definition_id = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.zip','')
+    task_sdk.delete_handler(definition_id)
+  end
+}
+
+
+
+############################################
+
 ##########################################
+# Working to this point on 8.28.2020
 raise "end"
 #########################################
 # ------------------------------------------------------------------------------
