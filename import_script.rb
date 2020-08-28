@@ -332,6 +332,33 @@ destinationModels_Array.each do |model|
 end
 
 # ------------------------------------------------------------------------------
+# Import Space Web APIs
+# ------------------------------------------------------------------------------
+
+sourceSpaceWebApisArray = []
+destinationSpaceWebApisArray = JSON.parse(space_sdk.find_space_webapis().content_string)['webApis'].map { |definition|  definition['slug']}
+  
+Dir["#{core_path}/space/webApis/*"].each{ |file|
+  body = JSON.parse(File.read(file))
+  if destinationSpaceWebApisArray.include?(body['slug'])
+    space_sdk.update_space_webapi(body['slug'], body)
+  else
+    space_sdk.add_space_webapi(body)
+  end
+  sourceSpaceWebApisArray.push(body['slug'])
+} 
+
+# ------------------------------------------------------------------------------
+# Delete Space Web APIs
+# Delete any Web APIs from the destination which are missing from the import data
+# ------------------------------------------------------------------------------
+destinationSpaceWebApisArray.each { | webApi |
+  if vars["options"]["delete"] && !sourceSpaceWebApisArray.include?(webApi)
+      space_sdk.delete_space_webapi(webApi)
+  end
+}
+
+# ------------------------------------------------------------------------------
 # import datastore forms
 # ------------------------------------------------------------------------------
 destinationDatastoreForms = [] #From destination server
@@ -340,7 +367,7 @@ sourceDatastoreForms = [] #From import data
 logger.info "Importing datastore forms for #{vars["core"]["space_slug"]}"
 
   datastoreForms = space_sdk.find_datastore_forms()
-  destinationDatastoreForms = JSON.parse(datastoreForms.content_string)['forms'].map{ |model| model['slug']}
+  destinationDatastoreForms = JSON.parse(datastoreForms.content_string)['forms'].map{ |datastore| datastore['slug']}
   Dir["#{core_path}/space/datastore/forms/*.json"].each { |datastore|
     body = JSON.parse(File.read(datastore))
     sourceDatastoreForms.push(body['slug'])
@@ -622,7 +649,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
 
 
   # ------------------------------------------------------------------------------
-  # add forms
+  # Add Forms
   # ------------------------------------------------------------------------------
   
   sourceForms = [] #From import data
@@ -641,7 +668,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   
   # ------------------------------------------------------------------------------
   # delete forms
-  # Delete any form from the destination which are missign from the import data
+  # Delete any form from the destination which are missing from the import data
   # ------------------------------------------------------------------------------
 
   destinationForms.each { |form|
@@ -649,6 +676,34 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
       space_sdk.delete_form(kapp['slug'], form)
     end
   } 
+
+  # ------------------------------------------------------------------------------
+  # Add Kapp Web APIs
+  # ------------------------------------------------------------------------------
+    
+  sourceWebApisArray = []
+  destinationWebApisArray = JSON.parse(space_sdk.find_kapp_webapis(kapp['slug']).content_string)['webApis'].map { |definition|  definition['slug']}
+  Dir["#{core_path}/space/kapps/#{kapp['slug']}/webApis/*"].each { |webApi|
+    body = JSON.parse(File.read(webApi))
+    if destinationWebApisArray.include?(body['slug'])
+    space_sdk.update_kapp_webapi(kapp['slug'], body['slug'], body)
+    else
+    space_sdk.add_kapp_webapi(kapp['slug'], body)
+    end
+    sourceWebApisArray.push(body['slug'])
+  }
+
+  # ------------------------------------------------------------------------------
+  # Delete Kapp Web APIs
+  # Delete any Kapp Web APIs from the destination which are missing from the import data
+  # ------------------------------------------------------------------------------
+  
+  destinationWebApisArray.each { | webApi |
+    if vars["options"]["delete"] && !sourceWebApisArray.include?(webApi)
+        space_sdk.delete_kapp_webapi(kapp['slug'], webApi)
+    end
+  }
+  
 }
 
 # ------------------------------------------------------------------------------
