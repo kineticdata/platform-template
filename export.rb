@@ -191,7 +191,7 @@ end
 
 # export submissions
 logger.info "  - exporting and writing submission data"
-Array(SUBMISSIONS_TO_EXPORT).each do |item|
+(SUBMISSIONS_TO_EXPORT || []).each do |item|
   is_datastore = item["datastore"] || false
   logger.info "    - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
