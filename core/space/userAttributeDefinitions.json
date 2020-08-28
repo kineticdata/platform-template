@@ -106,7 +106,7 @@
   },
   {
     "allowsMultiple": false,
-    "description": "Name of userΓò¼├┤Γö£├ºΓö£├╗s Manager (for quick reference)",
+    "description": "Name of userΓò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬ú╬ô├▓├╣s Manager (for quick reference)",
     "name": "Manager Name"
   },
   {
@@ -141,7 +141,7 @@
   },
   {
     "allowsMultiple": false,
-    "description": "Used for selection of people for Γò¼├┤Γö£├ºΓö¼├║requested forΓò¼├┤Γö£├ºΓö¼├æ and for Alternates. This will contain either the same value as Γò¼├┤Γö£├ºΓö¼├║DivisionΓò¼├┤Γö£├ºΓö¼├æ if Division Exists or it will contain the same value as Γò¼├┤Γö£├ºΓö¼├║CompanyΓò¼├┤Γö£├ºΓö¼├æ if it does not.",
+    "description": "Used for selection of people for Γò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼Γò¥╬ô├╢┬ú╬ô├▓├ªrequested forΓò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼Γò¥╬ô├╢┬úΓö£┬¬ and for Alternates. This will contain either the same value as Γò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼Γò¥╬ô├╢┬ú╬ô├▓├ªDivisionΓò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼Γò¥╬ô├╢┬úΓö£┬¬ if Division Exists or it will contain the same value as Γò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼Γò¥╬ô├╢┬ú╬ô├▓├ªCompanyΓò¼├┤Γö£ΓûôΓö¼Γò¥╬ô├╢┬ú╬ô├╢├▒Γò¼├┤Γö£ΓòóΓö¼├║╬ô├╢┬úΓö¼ΓòæΓò¼├┤Γö£ΓòóΓö¼Γò¥╬ô├╢┬úΓö£┬¬ if it does not.",
     "name": "Staff Selection Filter"
   },
   {

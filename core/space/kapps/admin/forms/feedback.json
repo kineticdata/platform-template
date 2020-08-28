@@ -564,7 +564,7 @@
           "type": "content",
           "renderType": "html",
           "name": "Confirmation",
-          "text": "<h2>Thanks!</h2>\n<p>We appreciate that you╬ô├ç├ûve taken the time to provide this feedback. This data is routed to the <strong>${space('name')}</strong> Feedback team for review, response, and action.</p>",
+          "text": "<h2>Thanks!</h2>\n<p>We appreciate that youΓò¼├┤Γö£├ºΓö£├╗ve taken the time to provide this feedback. This data is routed to the <strong>${space('name')}</strong> Feedback team for review, response, and action.</p>",
           "visible": true,
           "renderAttributes": {
           }
