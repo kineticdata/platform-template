@@ -399,7 +399,7 @@ sourceDatastoreFormSubmissions = {}
 # import kapp & datastore submissions
 Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each do |filename|
   form_slug = filename.match(/forms\/(.+)\/submissions\.ndjson/)[1]
-  Array(space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions']).each { |submission|
+  (space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions'] || []).each { |submission|
     space_sdk.delete_datastore_submission(submission['id'])
   }
   File.readlines(filename).each do |line|
@@ -804,7 +804,7 @@ destinationPolicyRuleArray.each { |rule|
 # identify Trees and Routines on destination
 destinationtrees = []
 trees = JSON.parse(task_sdk.find_trees().content_string)
-Array(trees['trees']).each { |tree|
+(trees['trees'] || []).each { |tree|
   destinationtrees.push( tree['title'] )
 }
 
