@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "securityPolicies": [
+    {
+      "endpoint": "Execution",
+      "name": "Everyone"
+    }
+  ],
+  "slug": "generate-survey",
+  "attributes": null
+}

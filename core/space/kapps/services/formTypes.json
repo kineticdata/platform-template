@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Approval"
+  },
+  {
+    "name": "Console"
+  },
+  {
+    "name": "Content"
+  },
+  {
+    "name": "Service"
+  },
+  {
+    "name": "Service Description"
+  },
+  {
+    "name": "Subservice"
+  },
+  {
+    "name": "Template"
+  },
+  {
+    "name": "Utility"
+  },
+  {
+    "name": "Work Order"
+  }
+]

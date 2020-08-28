@@ -1,0 +1,26 @@
+[
+  {
+    "message": "Must be an administrator.",
+    "name": "Admins",
+    "rule": "/* \n * Space admins are allowed access regardless of the the result of security \n * policies.  Returning 'false' denies anyone but a space access. \n */\nfalse",
+    "type": "Kapp"
+  },
+  {
+    "message": "Must be authenticated.",
+    "name": "Authenticated Users",
+    "rule": "identity('authenticated')",
+    "type": "Kapp"
+  },
+  {
+    "message": "Everyone is allowed access.",
+    "name": "Everyone",
+    "rule": "true",
+    "type": "Kapp"
+  },
+  {
+    "message": "Must be the user that created the submission.",
+    "name": "Submitter",
+    "rule": "(submission('anonymous') && submission('sessionToken') == identity('sessionToken'))\n|| (!submission('anonymous') && submission('createdBy') == identity('username'))",
+    "type": "Submission"
+  }
+]

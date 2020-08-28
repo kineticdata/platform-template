@@ -1,0 +1,8 @@
+{
+  "event": "Updated",
+  "filter": "user('attribute:API User')!=='True'",
+  "name": "User - Update",
+  "type": "User",
+  "url": "https://3724281.kinops.io/app/components/task/app/api/v1/run-tree/update_activities/User_Update/v4",
+  "attributes": null
+}

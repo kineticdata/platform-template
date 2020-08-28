@@ -1,0 +1,13 @@
+{
+  "name": "Kinetic Request CE",
+  "status": "Active",
+  "type": "Kinetic Request CE",
+  "policyRules": [
+
+  ],
+  "properties": {
+    "Proxy Username": "brian.peterson@kineticdata.com",
+    "Web Server": "https://3724281.kinops.io",
+    "Space Slug": ""
+  }
+}

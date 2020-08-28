@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Approval"
+  },
+  {
+    "name": "Automated"
+  },
+  {
+    "name": "Console"
+  },
+  {
+    "name": "Subtask"
+  },
+  {
+    "name": "Task"
+  },
+  {
+    "name": "Template"
+  },
+  {
+    "name": "Work Item"
+  }
+]

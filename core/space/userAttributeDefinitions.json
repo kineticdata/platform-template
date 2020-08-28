@@ -1,0 +1,152 @@
+[
+  {
+    "allowsMultiple": true,
+    "description": "Defines Groups that are used in security roles for special purposes like KTSync",
+    "name": "Access Group"
+  },
+  {
+    "allowsMultiple": true,
+    "description": "List Form Slug for any form the user needs access to even if not in Security Group",
+    "name": "Ad Hoc Form Access"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Additional Portal Roles (Full Portal Role name separated by '^')",
+    "name": "Add Portal Roles"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Agency within Department (if applicable)",
+    "name": "Agency"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Set to \"True\" if this is an API user and form constraints should not be run in trees.",
+    "name": "API User"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Determines whether actions and/or approvals should be assigned to this person when they are a team member. (True/False)",
+    "name": "Assignment Availability"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Branch within Division (if applicable)",
+    "name": "Branch"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Primary Company",
+    "name": "Company"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Users who can add, change and remove content but not modify content templates. Set to \"true\" for users to have this permission.",
+    "name": "Data Page Author"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "All of the permissions associated with Data Page Author plus can add and change content templates. Set to \"true\" for users to have this permission.",
+    "name": "Data Page Publisher"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Allow User Access to view Datastore Console (True or False)",
+    "name": "Datastore Console Access"
+  },
+  {
+    "allowsMultiple": true,
+    "description": "Allow individual to access specific Datastore form(s)",
+    "name": "Datastore Form Access"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "US Department User belongs to (if applicable) - i.e. USDA",
+    "name": "Department"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Division within Mission Area (if applicable)",
+    "name": "Division"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Agency as reported by Eauth",
+    "name": "EAuth Agency"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "SAML USDA First Name",
+    "name": "First Name"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Group within Branch (if applicable)",
+    "name": "Group"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "SAML USDA Last Name",
+    "name": "Last Name"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Boolean to determine if person is within management chain (True/False)",
+    "name": "Management"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "User's manager.  Updates through a request from the user profile screen.",
+    "name": "Manager"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "ID of user's manager",
+    "name": "Manager ID"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Name of userΓò¼├┤Γö£├ºΓö£├╗s Manager (for quick reference)",
+    "name": "Manager Name"
+  },
+  {
+    "allowsMultiple": true,
+    "description": "Contains agreement name(s) for which this user is a Master Approval Manager (ability to create/remove other Approval Managers)",
+    "name": "Master Approval Manager"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Mission Area within Agency (if applicable)",
+    "name": "Mission Area"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "User's organization. Updates through a request from the user profile screen.",
+    "name": "Organization"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "List of Portal Roles from eAuth",
+    "name": "Portal Roles"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Remedy Login ID",
+    "name": "Remedy Login ID"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "User's Site. Updates through a request from the user profile screen.",
+    "name": "Site"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Used for selection of people for Γò¼├┤Γö£├ºΓö¼├║requested forΓò¼├┤Γö£├ºΓö¼├æ and for Alternates. This will contain either the same value as Γò¼├┤Γö£├ºΓö¼├║DivisionΓò¼├┤Γö£├ºΓö¼├æ if Division Exists or it will contain the same value as Γò¼├┤Γö£├ºΓö¼├║CompanyΓò¼├┤Γö£├ºΓö¼├æ if it does not.",
+    "name": "Staff Selection Filter"
+  },
+  {
+    "allowsMultiple": false,
+    "description": "Used primarily for management (i.e. ACIO, Group Manager, etc.)",
+    "name": "Title"
+  }
+]

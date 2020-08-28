@@ -1,0 +1,8 @@
+{
+  "event": "Created",
+  "filter": "user('attribute:API User')!=='True'",
+  "name": "User - New",
+  "type": "User",
+  "url": "https://3724281.kinops.io/app/components/task/app/api/v1/run-tree/auth_activities/User_New/v3",
+  "attributes": null
+}
