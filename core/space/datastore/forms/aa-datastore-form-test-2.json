@@ -6,7 +6,7 @@
 
   ],
   "customHeadContent": null,
-  "description": "",
+  "description": "test",
   "indexDefinitions": [
     {
       "name": "createdAt",
@@ -68,5 +68,5 @@
   ],
   "slug": "aa-datastore-form-test-2",
   "status": "New",
-  "submissionLabelExpression": null
+  "submissionLabelExpression": ""
 }
