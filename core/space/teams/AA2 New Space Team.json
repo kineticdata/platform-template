@@ -1,8 +1,13 @@
 {
   "attributes": [
-
+    {
+      "name": "Assignable",
+      "values": [
+        "test"
+      ]
+    }
   ],
-  "description": "",
+  "description": "test",
   "name": "AA2 New Space Team",
   "slug": "ba3079f15a132bf655107e7a93e6d3e5"
 }

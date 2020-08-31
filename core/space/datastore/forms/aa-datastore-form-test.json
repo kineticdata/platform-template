@@ -67,6 +67,15 @@
       "displayPage": null,
       "elements": [
         {
+          "type": "content",
+          "renderType": "text",
+          "name": "test",
+          "text": null,
+          "visible": true,
+          "renderAttributes": {
+          }
+        },
+        {
           "type": "button",
           "label": "Submit",
           "name": "Submit Button",
