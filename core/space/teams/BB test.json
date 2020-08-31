@@ -1,6 +1,11 @@
 {
   "attributes": [
-
+    {
+      "name": "Assignable",
+      "values": [
+        "true"
+      ]
+    }
   ],
   "description": "",
   "name": "BB test",
