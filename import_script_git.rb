@@ -363,17 +363,9 @@ destinationDatastoreForms = JSON.parse(space_sdk.find_datastore_forms().content_
 file_path = "core/space/datastore/forms/\*.json"
 
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
-  logger.info type = file_diff.type
+  type = file_diff.type
   body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
   file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
-##################################################################
-logger.info "sourceDatastoreForms #{sourceDatastoreForms}"
-logger.info "destinationDatastoreForms #{destinationDatastoreForms}"
-logger.info "file_name #{file_name}"
-logger.info "body['name'] #{body['name']}" if body
-logger.info "body['slug'] #{body['slug']}" if body
-logger.info destinationDatastoreForms.include?(body['slug'])
-##################################################################
   if type=="modified"
     if destinationDatastoreForms.include?(body['slug'])
       space_sdk.update_datastore_form(body['slug'], body)
