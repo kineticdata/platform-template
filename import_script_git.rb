@@ -378,8 +378,7 @@ logger.info destinationDatastoreForms.include?(body['slug'])
     if destinationDatastoreForms.include?(body['slug'])
       space_sdk.update_datastore_form(body['slug'], body)
     elsif destinationDatastoreForms.include?(file_name)
-      space_sdk.add_datastore_form(body)
-      space_sdk.delete_datastore_form(file_name)
+      space_sdk.update_datastore_form(file_name, body)
     end
   elsif type=="new"
     space_sdk.add_datastore_form(body)
