@@ -4,9 +4,9 @@
   "type": "Adhoc",
   "policyRules": [
     {
-      "name": "Admins",
-      "rule": "@identity.get_property('spaceAdmin') == 'true'",
-      "message": "Must be a space admin",
+      "name": "Allow All",
+      "rule": "true",
+      "message": "Unrestricted access",
       "type": "API Access"
     }
   ],

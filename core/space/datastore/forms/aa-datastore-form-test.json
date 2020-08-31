@@ -61,7 +61,29 @@
   "name": "AA Datastore Form Test",
   "notes": null,
   "pages": [
+    {
+      "advanceCondition": null,
+      "displayCondition": null,
+      "displayPage": null,
+      "elements": [
+        {
+          "type": "button",
+          "label": "Submit",
+          "name": "Submit Button",
+          "visible": true,
+          "enabled": true,
+          "renderType": "submit-page",
+          "renderAttributes": {
+          }
+        }
+      ],
+      "events": [
 
+      ],
+      "name": "Page 1",
+      "renderType": "submittable",
+      "type": "page"
+    }
   ],
   "securityPolicies": [
 
