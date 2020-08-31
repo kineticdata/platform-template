@@ -358,19 +358,24 @@ end
 # ------------------------------------------------------------------------------
 logger.info "Importing datastore forms for #{vars["core"]["space_slug"]}"
 
-destinationDatastoreForms = [] #From destination server
 sourceDatastoreForms = [] #From import data
+destinationDatastoreForms = JSON.parse(space_sdk.find_datastore_forms().content_string)['forms'].map{ |forms| forms['slug']}
 file_path = "core/space/datastore/forms/\*.json"
-datastoreForms = space_sdk.find_datastore_forms()
-destinationDatastoreForms = JSON.parse(datastoreForms.content_string)['forms'].map{ |model| model['slug']}
 
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
-  type = file_diff.type
+  logger.info type = file_diff.type
   body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
-  file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+  logger.info file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+##################################################################
+logger.info "sourceDatastoreForms #{sourceDatastoreForms}"
+logger.info "destinationDatastoreForms #{destinationDatastoreForms}"
+logger.info "body['name'] #{body['name']}"
+logger.info "body['slug'] #{body['slug']}"
+logger.info destinationDatastoreForms.include?(body['slug'])
+##################################################################
   if type=="modified"
-    if destinationDatastoreForms.include?(body['name'])
-      space_sdk.update_datastore_form(body['name'], body)
+    if destinationDatastoreForms.include?(body['slug'])
+      space_sdk.update_datastore_form(body['slug'], body)
     elsif destinationDatastoreForms.include?(file_name)
       space_sdk.add_datastore_form(body)
       space_sdk.delete_datastore_form(file_name)
@@ -438,11 +443,10 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   end
 
   #Add Attributes to the Team
-  body['attributes'].each{ | attribute |
-
+  (( body && body['attributes']) || {}).each{ | attribute |
     space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
   }
-  SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
+  SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )if body
 }
 
 # ------------------------------------------------------------------------------
