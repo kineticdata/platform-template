@@ -1,6 +1,6 @@
 {
   "name": "AA Test Policy Rule",
   "rule": "true",
-  "message": "test",
+  "message": "test updated",
   "type": "Category Access"
 }
