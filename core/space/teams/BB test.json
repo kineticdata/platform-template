@@ -5,6 +5,12 @@
       "values": [
         "true"
       ]
+    },
+    {
+      "name": "Icon",
+      "values": [
+        "test"
+      ]
     }
   ],
   "description": "",
