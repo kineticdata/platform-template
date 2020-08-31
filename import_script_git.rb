@@ -365,12 +365,13 @@ file_path = "core/space/datastore/forms/\*.json"
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   logger.info type = file_diff.type
   body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
-  logger.info file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+  file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
 ##################################################################
 logger.info "sourceDatastoreForms #{sourceDatastoreForms}"
 logger.info "destinationDatastoreForms #{destinationDatastoreForms}"
-logger.info "body['name'] #{body['name']}"
-logger.info "body['slug'] #{body['slug']}"
+logger.info "file_name #{file_name}"
+logger.info "body['name'] #{body['name']}" if body
+logger.info "body['slug'] #{body['slug']}" if body
 logger.info destinationDatastoreForms.include?(body['slug'])
 ##################################################################
   if type=="modified"
@@ -382,7 +383,7 @@ logger.info destinationDatastoreForms.include?(body['slug'])
     end
   elsif type=="new"
     space_sdk.add_datastore_form(body)
-  elsif type=="deleted" && vars["options"]["delete"] && destinationDatastoreForms.include?(file_name)
+  elsif type=="deleted" && vars["options"]["delete"] && destinationDatastoreForms.include?(git )
     space_sdk.delete_datastore_form(file_name)
   end
 }
