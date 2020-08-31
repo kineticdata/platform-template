@@ -438,8 +438,8 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   end
 
   #Add Attributes to the Team
-  body['attributes'].each{ | body |
-    space_sdk.add_team_attribute(body['name'], body['name'], body['values'])
+  body['attributes'].each{ | attribute |
+    space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
   }
   SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
 }
