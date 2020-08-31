@@ -394,11 +394,9 @@ file_path = "core/space/datastore/forms/\*/\*.ndjson"
 
 # import kapp & datastore submissions
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
-  puts file_diff.path
-  puts pwd
   type = file_diff.type
   # get the form slug from the 2nd to last place in the path of the submission.ndjson file (ie: core\space\datastore\forms\alert\submissions.ndjson)
-  puts form_slug = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}[-2]
+  form_slug = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}[-2]
   Array(space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions']).each { |submission|
     space_sdk.delete_datastore_submission(submission['id'])
   }
@@ -713,11 +711,10 @@ logger.info "  importing with api: #{task_sdk.api_url}"
 
 logger.info "Importing the Sources the for #{vars["core"]["space_slug"]}"
 
-puts file_path = "task/sources/*.json"
+file_path = "task/sources/*.json"
 g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
-  puts type = file_diff.type
-
-  puts file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+  type = file_diff.type
+  file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
   if !file_diff.blob().nil?
     body = JSON.parse(file_diff.blob().contents)
     source =body.select { |k,v| k == "name" }
@@ -793,67 +790,62 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   end
 }
 
-
-
-############################################
-
-##########################################
-# Working to this point on 8.28.2020
-raise "end"
-#########################################
 # ------------------------------------------------------------------------------
 # import task categories
 # ------------------------------------------------------------------------------
 
-sourceCategories = [] #From import data
-destinationCategories = JSON.parse(task_sdk.find_categories().content_string)['categories'].map{ |category| category['name']}
+logger.info "Importing the Categories the for #{vars["core"]["space_slug"]}"
 
-Dir["#{task_path}/categories/*.json"].each { |file|
-  category = JSON.parse(File.read(file))
-  sourceCategories.push(category['name'])
-  if destinationCategories.include?(category['name'])
-    task_sdk.update_category(category['name'], category)
-  else
-    task_sdk.add_category(category)
+logger.info  file_path = "#{task_path}/categories/*.json"
+g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
+  type = file_diff.type
+  if !file_diff.blob().nil?
+    body = JSON.parse(file_diff.blob().contents)
   end
-}
-
-# ------------------------------------------------------------------------------
-# delete task categories
-# ------------------------------------------------------------------------------
-
-destinationCategories.each { |category|
-  if vars["options"]["delete"] && !sourceCategories.include?(category)
-    task_sdk.delete_category(category)
+  if type == "new"
+    task_sdk.add_category(body)
+  elsif type == "modified"
+    task_sdk.update_category(body["name"],body)
+  elsif type == "deleted"
+    source_contents = ""
+    # match lines betweeen -{ and -} which identifies the prior file contents
+    file_diff.patch.match(/-{([\S\s]*?)-}/).to_s.each_line do |line|
+      source_contents += line.gsub(/^-{1}/,'')
+    end
+    source_name = JSON.parse(source_contents)['name']
+    task_sdk.delete_category(source_name)
   end
+
 }
 
 # ------------------------------------------------------------------------------
 # import task policy rules
 # ------------------------------------------------------------------------------
 
-destinationPolicyRuleArray = JSON.parse(task_sdk.find_policy_rules().content_string)['policyRules']
-sourcePolicyRuleArray = Dir["#{task_path}/policyRules/*.json"].map{ |file|
-    rule = JSON.parse(File.read(file))
-    {"name" => rule['name'], "type" => rule['type']}
-  }
+logger.info "Importing the Policy Rules the for #{vars["core"]["space_slug"]}"
 
-Dir["#{task_path}/policyRules/*.json"].each { |file|
-  rule = JSON.parse(File.read(file))
-  if !destinationPolicyRuleArray.find {|dest_rule| dest_rule['name']==rule['name'] && dest_rule['type']==rule['type'] }.nil?
-    task_sdk.update_policy_rule(rule.slice('type', 'name'), rule)
-  else
-    task_sdk.add_policy_rule(rule)
+logger.info  file_path = "#{task_path}/policyRules/*.json"
+g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
+  logger.info type = file_diff.type
+  if !file_diff.blob().nil?
+    body = JSON.parse(file_diff.blob().contents)
+    logger.info body.inspect
+    logger.info body.slice('type', 'name')
   end
-}
+  if type == "new"
+    task_sdk.add_policy_rule(body)
+  elsif type == "modified"
+    task_sdk.update_policy_rule(body.slice('type', 'name'),body)
+  elsif type == "deleted"
+    source_contents = ""
+    # match lines betweeen -{ and -} which identifies the prior file contents
+    file_diff.patch.match(/-{([\S\s]*?)-}/).to_s.each_line do |line|
+      source_contents += line.gsub(/^-{1}/,'')
+    end
+    policyRule = JSON.parse(source_contents).slice('type', 'name')
+    task_sdk.delete_policy_rule(policyRule)
+  end
 
-# ------------------------------------------------------------------------------
-# delete task policy rules
-# ------------------------------------------------------------------------------
-destinationPolicyRuleArray.each { |rule|
-  if vars["options"]["delete"] && sourcePolicyRuleArray.find {|source_rule| source_rule['name']==rule['name'] && source_rule['type']==rule['type'] }.nil?
-    task_sdk.delete_policy_rule(rule)
-  end
 }
 
 # ------------------------------------------------------------------------------

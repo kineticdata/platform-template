@@ -1,0 +1,15 @@
+{
+  "name": "AA New Plugin Test",
+  "status": "Active",
+  "type": "Adhoc",
+  "policyRules": [
+    {
+      "name": "Admins",
+      "rule": "@identity.get_property('spaceAdmin') == 'true'",
+      "message": "Must be a space admin",
+      "type": "API Access"
+    }
+  ],
+  "properties": {
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "securityPolicies": [
+
+  ],
+  "slug": "aa-new-web-api-test",
+  "attributes": null
+}

@@ -1,0 +1,6 @@
+{
+  "name": "AA New Policy Rule",
+  "rule": "true",
+  "message": "Test",
+  "type": "Category Access"
+}

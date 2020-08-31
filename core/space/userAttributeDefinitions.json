@@ -1,5 +1,10 @@
 [
   {
+    "allowsMultiple": false,
+    "description": "",
+    "name": "AA New User Attribute"
+  },
+  {
     "allowsMultiple": true,
     "description": "Defines Groups that are used in security roles for special purposes like KTSync",
     "name": "Access Group"

@@ -1,6 +1,11 @@
 [
   {
     "allowsMultiple": false,
+    "description": "",
+    "name": "AA New Datastore Form Attribute"
+  },
+  {
+    "allowsMultiple": false,
     "description": "Stores which columns are rendered within the datastore console",
     "name": "Datastore Configuration"
   },

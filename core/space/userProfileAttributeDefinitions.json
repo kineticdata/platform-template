@@ -1,5 +1,10 @@
 [
   {
+    "allowsMultiple": false,
+    "description": "",
+    "name": "AA New User Profile Attribute"
+  },
+  {
     "allowsMultiple": true,
     "description": "Define Alternates with start/end dates and a flag to determine whether it should be applied to in-flight assignments (Actions and Approvals)",
     "name": "Alternates"

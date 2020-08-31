@@ -2,6 +2,12 @@
   "afterLogoutPath": "",
   "attributes": [
     {
+      "name": "AA New Space Attribute",
+      "values": [
+        "test"
+      ]
+    },
+    {
       "name": "Admin Kapp Slug",
       "values": [
         "admin"
@@ -188,39 +194,39 @@
   "securityPolicies": [
     {
       "endpoint": "Discussion Creation",
-      "name": "Authenticated Users"
+      "name": "Everyone"
     },
     {
       "endpoint": "Display",
-      "name": "Authenticated Users"
+      "name": "Everyone"
     },
     {
       "endpoint": "Teams Access",
-      "name": "Authenticated Users"
+      "name": "Everyone"
     },
     {
       "endpoint": "Team Creation",
-      "name": "Admins"
+      "name": "Everyone"
     },
     {
       "endpoint": "Team Membership Modification",
-      "name": "Admins"
+      "name": "Everyone"
     },
     {
       "endpoint": "Team Modification",
-      "name": "Admins"
+      "name": "Everyone"
     },
     {
       "endpoint": "Users Access",
-      "name": "Authenticated Users"
+      "name": "Everyone"
     },
     {
       "endpoint": "User Creation",
-      "name": "Admins"
+      "name": "Everyone"
     },
     {
       "endpoint": "User Modification",
-      "name": "Admins"
+      "name": "Everyone"
     }
   ],
   "sessionInactiveLimitInSeconds": 2592000,

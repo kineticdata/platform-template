@@ -1,6 +1,11 @@
 [
   {
     "allowsMultiple": false,
+    "description": "",
+    "name": "AA New Space Attribute"
+  },
+  {
+    "allowsMultiple": false,
     "description": null,
     "name": "Admin Kapp Slug"
   },

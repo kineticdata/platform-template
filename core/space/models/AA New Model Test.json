@@ -1,0 +1,25 @@
+{
+  "activeMappingName": "AA New Model Test",
+  "attributes": [
+
+  ],
+  "mappings": [
+    {
+      "agentSlug": "system",
+      "attributes": [
+
+      ],
+      "bridgeSlug": "kinetic-core",
+      "name": "AA New Model Test",
+      "qualifications": [
+
+      ],
+      "structure": "Users"
+    }
+  ],
+  "name": "AA New Model Test",
+  "qualifications": [
+
+  ],
+  "status": "Active"
+}

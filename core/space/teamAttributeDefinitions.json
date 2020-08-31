@@ -1,6 +1,11 @@
 [
   {
     "allowsMultiple": false,
+    "description": "",
+    "name": "AA New Team Attribute"
+  },
+  {
+    "allowsMultiple": false,
     "description": "True or False if this team should be used in Queue Kapp Assignments",
     "name": "Assignable"
   },
