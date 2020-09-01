@@ -1,5 +1,3 @@
-#Updated 2020-06-01 By Brian Peterson
-
 # NOTES
 # This is a migration tool not an installation tool.  There are certain expectations that the destination is configured and working.
 # Agent Server(s) must be added ahead of migration.  /space/settings/platformComponents/agents
