@@ -622,24 +622,23 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/categories.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceCategoryArray = []
-    destinationCategoryArray = JSON.parse(space_sdk.find_categories(kapp_slug).content_string)['categories'].map { |definition|  definition['name']}
+    destinationCategoryArray = JSON.parse(space_sdk.find_categories(kapp_slug).content_string)['categories'].map { |definition|  definition['slug']}
     categories = JSON.parse(file_diff.blob().contents)
     categories.each { | body |
-      if destinationCategoryArray.include?(body['name'])
+      if destinationCategoryArray.include?(body['slug'])
         space_sdk.update_category_on_kapp(kapp_slug, body['slug'], body)
       else
         space_sdk.add_category_on_kapp(kapp_slug, body)
       end
-      sourceCategoryArray.push(body['name'])
+      sourceCategoryArray.push(body['slug'])
     }
 
     # ------------------------------------------------------------------------------
     # Delete Categories on the Kapp
     # ------------------------------------------------------------------------------
-
-    destinationCategoryArray.each { | body |
-      if !sourceCategoryArray.include?(body)
-          space_sdk.delete_category_on_kapp(kapp_slug,body)
+    destinationCategoryArray.each { | slug |
+      if !sourceCategoryArray.include?(slug)
+          space_sdk.delete_category_on_kapp(kapp_slug,slug)
       end
     }
   end
