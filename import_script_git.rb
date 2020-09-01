@@ -538,12 +538,36 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
       end
     }
   end
+  
+  # ------------------------------------------------------------------------------
+  # Migrate Form Type Definitions
+  # ------------------------------------------------------------------------------
+  logger.info "Importing Form Type Definitions for #{kapp_slug} Kapp"
+  file_path = "core/space/kapps/#{kapp_slug}/formTypes.json"
+  if file_diff = g.diff(commit_1, commit_2).path(file_path).first
+    sourceFormTypesArray = []
+    destinationFormTypesArray = JSON.parse(space_sdk.find_form_types_on_kapp(kapp_slug).content_string)['formTypes'].map { |formType|  formType['name']}
+    kappFormTypes = JSON.parse(file_diff.blob().contents)
 
+    kappFormTypes.each { | body |
+        if destinationFormTypesArray.include?(body['name'])
+          space_sdk.update_kapp_form_type(kapp_slug, body['name'], body)
+        else
+          space_sdk.add_form_type_on_kapp(kapp_slug, body)
+        end
+        sourceFormTypesArray.push(body['name'])
+    }
+    destinationFormTypesArray.each { | name |
+      if !sourceFormTypesArray.include?(name)
+          space_sdk.delete_form_type(kapp_slug,name)
+      end
+    }
+  end
   # ------------------------------------------------------------------------------
   # Migrate Form Attribute Definitions
   # ------------------------------------------------------------------------------
   logger.info "Importing Form Attribute Definitions for #{kapp_slug} Kapp"
-  file_path = "core/space/kapps/#{kapp_slug}/categoryAttributeDefinitions.json"
+  file_path = "core/space/kapps/#{kapp_slug}/formAttributeDefinitions.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceFormAttributeArray = []
     destinationFormAttributeArray = JSON.parse(space_sdk.find_form_attribute_definitions(kapp_slug).content_string)['formAttributeDefinitions'].map { |definition|  definition['name']}
