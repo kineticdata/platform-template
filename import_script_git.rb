@@ -1,3 +1,5 @@
+#Updated 2020-06-01 By Brian Peterson
+
 # NOTES
 # This is a migration tool not an installation tool.  There are certain expectations that the destination is configured and working.
 # Agent Server(s) must be added ahead of migration.  /space/settings/platformComponents/agents
@@ -647,7 +649,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   }
 
   # ------------------------------------------------------------------------------
-  # add forms
+  # Add Kapp forms
   # ------------------------------------------------------------------------------
   logger.info "Importing forms for the #{kapp_slug} Kapp"
 
@@ -668,7 +670,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
       space_sdk.add_form(kapp_slug, body)
     elsif type=="deleted" && vars["options"]["delete"] && destinationForms.include?(file_name)
       #Delete form is disabled
-      space_sdk.delete_form(kapp_slug, file_name)
+      #space_sdk.delete_form(kapp_slug, file_name)
     end
   }
 
