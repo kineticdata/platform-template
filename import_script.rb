@@ -269,9 +269,10 @@ if File.file?(file = "#{core_path}/space/datastoreFormAttributeDefinitions.json"
   }  
 end
 
-destinationDatastoreAttributeArray.each { | spaceAttribute |
-  if vars["options"]["delete"] && !sourceDatastoreAttributeArray.include?(spaceAttribute)
-      space_sdk.delete_datastore_form_attribute_definition(spaceAttribute)
+destinationDatastoreAttributeArray.each { | name |
+  if vars["options"]["delete"] && !sourceDatastoreAttributeArray.include?(name)
+      #Delete form is disabled
+      #space_sdk.delete_datastore_form_attribute_definition(name)
   end
 }
 
@@ -481,7 +482,9 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
         end
         sourceKappAttributeArray.push(attribute['name'])
     }   
-
+    # ------------------------------------------------------------------------------
+    # Delete Kapp Attribute Definitions
+    # ------------------------------------------------------------------------------
     destinationKappAttributeArray.each { | attribute |
       if vars["options"]["delete"] && !sourceKappAttributeArray.include?(attribute)
           space_sdk.delete_kapp_attribute_definition(kapp['slug'],attribute)
@@ -492,7 +495,6 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   # Migrate Kapp Category Definitions
   # ------------------------------------------------------------------------------
-  
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categoryAttributeDefinitions.json")
     sourceKappCategoryArray = []
     destinationKappAttributeArray = JSON.parse(space_sdk.find_category_attribute_definitions(kapp['slug']).content_string)['categoryAttributeDefinitions'].map { |definition|  definition['name']}  
@@ -505,17 +507,19 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
         end
         sourceKappCategoryArray.push(attribute['name'])
     }   
-  
+    # ------------------------------------------------------------------------------
+    # Delete Kapp Category Definitions
+    # ------------------------------------------------------------------------------
     destinationKappAttributeArray.each { | attribute |
       if !sourceKappCategoryArray.include?(attribute)
           space_sdk.delete_category_attribute_definition(kapp['slug'],attribute)
       end
     }
   end
-  # ------------------------------------------------------------------------------
-  # Migrate Form Attribute Definitions
-  # ------------------------------------------------------------------------------
   
+  # ------------------------------------------------------------------------------
+  # Migrate Kapp Form Attribute Definitions
+  # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/formAttributeDefinitions.json")
     sourceFormAttributeArray = []
     destinationFormAttributeArray = JSON.parse(space_sdk.find_form_attribute_definitions(kapp['slug']).content_string)['formAttributeDefinitions'].map { |definition|  definition['name']}
@@ -528,23 +532,48 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
         end
         sourceFormAttributeArray.push(attribute['name'])
     }   
-
+    # ------------------------------------------------------------------------------
+    # Delete Kapp Form Attribute Definitions
+    # ------------------------------------------------------------------------------
     destinationFormAttributeArray.each { | attribute |
       if vars["options"]["delete"] && !sourceFormAttributeArray.include?(attribute)
           space_sdk.delete_form_attribute_definition(kapp['slug'],attribute)
       end
     }
   end
-
+  
+  # ------------------------------------------------------------------------------
+  # Migrate Kapp Form Type Definitions
+  # ------------------------------------------------------------------------------
+  if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/formTypes.json")
+    sourceFormTypesArray = []
+    destinationFormTypesArray = JSON.parse(space_sdk.find_formtypes(kapp['slug']).content_string)['formTypes'].map { |formTypes|  formTypes['name']}
+    formTypes = JSON.parse(File.read(file))
+    formTypes.each { |body|
+      if destinationFormTypesArray.include?(body['name'])
+        space_sdk.update_formtype(kapp['slug'], body['name'], body)
+      else
+        space_sdk.add_formtype(kapp['slug'], body)
+      end
+      sourceFormTypesArray.push(body['name'])
+    }   
+    # ------------------------------------------------------------------------------
+    # Delete Kapp Form Type Definitions
+    # ------------------------------------------------------------------------------
+    destinationFormTypesArray.each { | name |
+      if vars["options"]["delete"] && !sourceFormTypesArray.include?(name)
+          space_sdk.delete_formtype(kapp['slug'],name)
+      end
+    }
+  end
 
   # ------------------------------------------------------------------------------
-  # Migrate Security Policy Definitions
+  # Migrate Kapp Security Policy Definitions
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/securityPolicyDefinitions.json")
     sourceSecurtyPolicyArray = []
     destinationSecurtyPolicyArray = JSON.parse(space_sdk.find_security_policy_definitions(kapp['slug']).content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
     securityPolicyDefinitions = JSON.parse(File.read(file))
-
     securityPolicyDefinitions.each { |attribute|
         if destinationSecurtyPolicyArray.include?(attribute['name'])
           space_sdk.update_security_policy_definition(kapp['slug'], attribute['name'], attribute)
@@ -560,12 +589,11 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
       end
     }
   end
+  
   # ------------------------------------------------------------------------------
-  # Migrate Categories on the Kapp
+  # Migrate Kapp Categories
   # TODO: Add code for find, update, and delete when methods are available in the SDK
   # ------------------------------------------------------------------------------
-
-
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categories.json")
     sourceCategoryArray = []
     #destinationCategoryArray = JSON.parse(space_sdk.find_categories(kapp['slug']).content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
@@ -579,9 +607,8 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
       #end
       sourceCategoryArray.push(attribute['name'])
     }
-
     # ------------------------------------------------------------------------------
-    # Delete Categories on the Kapp
+    # Delete Kapp Categories
     # TODO: Add code for delete when methods are available in the SDK
     # ------------------------------------------------------------------------------
      
@@ -638,7 +665,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     }   
   
     # ------------------------------------------------------------------------------
-    # delete Kapp Webhooks
+    # Delete Kapp Webhooks
     # ------------------------------------------------------------------------------
     destinationWebhookArray.each { | attribute |
       if vars["options"]["delete"] && !sourceWebhookArray.include?(attribute)
@@ -649,12 +676,10 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
 
 
   # ------------------------------------------------------------------------------
-  # Add Forms
+  # Add Kapp Forms
   # ------------------------------------------------------------------------------
-  
   sourceForms = [] #From import data
   destinationForms = JSON.parse(space_sdk.find_forms(kapp['slug']).content_string)['forms'].map{ |form| form['slug']}
-  
   Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"].each { |form|
     properties = File.read(form)
     form = JSON.parse(properties)
@@ -665,22 +690,19 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
       space_sdk.add_form(kapp['slug'], properties)
     end
   }
-  
   # ------------------------------------------------------------------------------
   # delete forms
-  # Delete any form from the destination which are missing from the import data
   # ------------------------------------------------------------------------------
-
-  destinationForms.each { |form|
+  destinationForms.each { |slug|
     if vars["options"]["delete"] && !sourceForms.include?(form)
-      space_sdk.delete_form(kapp['slug'], form)
+      #Delete form is disabled
+      #space_sdk.delete_form(kapp['slug'], slug)
     end
   } 
 
   # ------------------------------------------------------------------------------
   # Add Kapp Web APIs
-  # ------------------------------------------------------------------------------
-    
+  # ------------------------------------------------------------------------------   
   sourceWebApisArray = []
   destinationWebApisArray = JSON.parse(space_sdk.find_kapp_webapis(kapp['slug']).content_string)['webApis'].map { |definition|  definition['slug']}
   Dir["#{core_path}/space/kapps/#{kapp['slug']}/webApis/*"].each { |webApi|
@@ -692,18 +714,14 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     end
     sourceWebApisArray.push(body['slug'])
   }
-
   # ------------------------------------------------------------------------------
   # Delete Kapp Web APIs
-  # Delete any Kapp Web APIs from the destination which are missing from the import data
   # ------------------------------------------------------------------------------
-  
   destinationWebApisArray.each { | webApi |
     if vars["options"]["delete"] && !sourceWebApisArray.include?(webApi)
         space_sdk.delete_kapp_webapi(kapp['slug'], webApi)
     end
   }
-  
 }
 
 # ------------------------------------------------------------------------------
