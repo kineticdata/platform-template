@@ -414,7 +414,7 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
 # ------------------------------------------------------------------------------
 logger.info "Importing Teams for #{vars["core"]["space_slug"]}"
 SourceTeamArray = []
-file_path = "core/space/teams/\*.json"
+file_path = "core/space/teams/*.json"
 destinationTeams = JSON.parse(space_sdk.find_teams().content_string)['teams'].map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   type = file_diff.type
@@ -443,11 +443,11 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
 }
 
 # ------------------------------------------------------------------------------
-# import space webhooks
+# Import Space Webhooks
 # ------------------------------------------------------------------------------
 logger.info "Importing Webhooks for #{vars["core"]["space_slug"]}"
 
-file_path = "space/webhooks/*.json"
+file_path = "core/space/webhooks/*.json"
 sourceSpaceWebhooksArray = []
 destinationSpaceWebhooksArray = JSON.parse(space_sdk.find_webhooks_on_space().content_string)['webhooks'].map{ |webhook| webhook['name']}
 
@@ -456,16 +456,16 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
   file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
   if type=="modified"
-    if destinationTeams.include?(body['name'])
+    if destinationSpaceWebhooksArray.include?(body['name'])
       space_sdk.update_webhook_on_space(body['name'], body)
-    elsif destinationTeams.include?(file_name)
+    elsif destinationSpaceWebhooksArray.include?(file_name)
       space_sdk.add_webhook_on_space(body)
-      space_sdk.delete_webhook_on_space(webhook)
+      space_sdk.delete_webhook_on_space(file_name)
     end
   elsif type=="new"
     space_sdk.add_webhook_on_space(body)
-  elsif type=="deleted" && vars["options"]["delete"] && destinationTeams.include?(file_name)
-    space_sdk.delete_webhook_on_space(webhook)
+  elsif type=="deleted" && vars["options"]["delete"] && !destinationTeams.include?(file_name)
+    space_sdk.delete_webhook_on_space(file_name)
   end
 }
 
@@ -651,23 +651,20 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   sourceWebhookArray = []
   destinationWebhookArray = JSON.parse(space_sdk.find_webhooks_on_kapp(kapp_slug).content_string)['webhooks'].map { |definition|  definition['name']}
   g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
-
-    body = JSON.parse(file_diff.blob().contents)
-    if destinationWebhookArray.include?(body['name'])
-      space_sdk.update_webhook_on_kapp(kapp_slug, body['name'], body)
-    else
-      space_sdk.add_webhook_on_kapp(kapp_slug, body)
-    end
-    sourceWebhookArray.push(body['name'])
-
-    # ------------------------------------------------------------------------------
-    # delete Kapp Webhooks
-    # ------------------------------------------------------------------------------
-    destinationWebhookArray.each { | body |
-      if vars["options"]["delete"] && !sourceWebhookArray.include?(body)
-          space_sdk.delete_webhook_on_kapp(kapp_slug,body)
+    type = file_diff.type
+    body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
+    file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+    if type=="modified"
+      if destinationWebhookArray.include?(body['name'])
+        space_sdk.update_webhook_on_kapp(kapp_slug, body['name'], body)
+      elsif destinationWebhookArray.include?(file_name)
+        space_sdk.update_webhook_on_kapp(kapp_slug, file_name, body)
       end
-    }
+    elsif type=="new"
+      space_sdk.add_webhook_on_kapp(kapp_slug, body)
+    elsif type=="deleted" && vars["options"]["delete"] && destinationWebhookArray.include?(file_name)
+      space_sdk.delete_webhook_on_kapp(kapp_slug, file_name)
+    end
   }
 
   # ------------------------------------------------------------------------------
