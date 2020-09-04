@@ -888,7 +888,7 @@ g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
 
 logger.info "Importing the Policy Rules the for #{vars["core"]["space_slug"]}"
 
-ile_path = "#{task_path}/policyRules/*.json"
+file_path = "#{task_path}/policyRules/*.json"
 g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
   type = file_diff.type
   if !file_diff.blob().nil?
