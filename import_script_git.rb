@@ -167,7 +167,6 @@ end
 # Update Space Attributes
 # ------------------------------------------------------------------------------
 
-
 file_path = "core/space/spaceAttributeDefinitions.json"
 
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
@@ -504,8 +503,9 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = file.gsub(pwd+'/','')  # convert file path to git directory
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     kappExists = space_sdk.find_kapp(kapp_slug).code.to_i == 200
+    
     logger.info "Importing Kapp Definitions for #{kapp_slug} Kapp"
-    kapp_body= JSON.parse(file_diff.blob().contents) unless file_diff.nil?
+    kapp_body = JSON.parse(file_diff.blob().contents) unless file_diff.nil?
     if kappExists
       space_sdk.update_kapp(kapp_body['slug'], kapp_body)
     else
@@ -740,7 +740,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
       space_sdk.delete_kapp_webapi(kapp_slug, file_name)
     end
   } 
-  
+
   # ------------------------------------------------------------------------------
   # End of Kapp Import Loop
   # ------------------------------------------------------------------------------
@@ -762,7 +762,7 @@ task_sdk = KineticSdk::Task.new({
 # ------------------------------------------------------------------------------
 
 logger.info "Importing the task components for the \"#{template_name}\" template."
-logger.info "  importing with api: #{task_sdk.api_url}"
+logger.info "Importing with api: #{task_sdk.api_url}"
 
 # ------------------------------------------------------------------------------
 # task handlers
@@ -888,13 +888,13 @@ g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
 
 logger.info "Importing the Policy Rules the for #{vars["core"]["space_slug"]}"
 
-logger.info  file_path = "#{task_path}/policyRules/*.json"
+ile_path = "#{task_path}/policyRules/*.json"
 g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
-  logger.info type = file_diff.type
+  type = file_diff.type
   if !file_diff.blob().nil?
     body = JSON.parse(file_diff.blob().contents)
-    logger.info body.inspect
-    logger.info body.slice('type', 'name')
+    body.inspect
+    body.slice('type', 'name')
   end
   if type == "new"
     task_sdk.add_policy_rule(body)
