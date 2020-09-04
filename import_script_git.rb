@@ -1,5 +1,3 @@
-#Updated 2020-06-01 By Brian Peterson
-
 # NOTES
 # This is a migration tool not an installation tool.  There are certain expectations that the destination is configured and working.
 # Agent Server(s) must be added ahead of migration.  /space/settings/platformComponents/agents
@@ -354,6 +352,32 @@ end
   }
 
 # ------------------------------------------------------------------------------
+# Import Space Web APIs
+# ------------------------------------------------------------------------------
+
+  logger.info "Importing Web APIs for #{vars["core"]["space_slug"]}"
+
+  destinationWebAPIs = space_sdk.find_space_webapis()
+  destinationWebAPIs = JSON.parse(destinationWebAPIs.content_string)['webApis'].map { |definition|  definition['slug']}
+  file_path = "core/space/webApis/*"
+  g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
+  type = file_diff.type
+  body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
+  file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+  if type=="modified"
+    if destinationWebAPIs.include?(body['slug'])
+      space_sdk.update_space_webapi(body['slug'], body)
+    elsif destinationWebAPIs.include?(file_name)
+      space_sdk.update_space_webapi(file_name, body)
+    end
+  elsif type=="new"
+    space_sdk.add_space_webapi(body)
+  elsif type=="deleted" && vars["options"]["delete"] && destinationWebAPIs.include?(file_name )
+    space_sdk.delete_space_webapi(file_name)
+  end
+}
+
+# ------------------------------------------------------------------------------
 # import datastore forms
 # ------------------------------------------------------------------------------
 logger.info "Importing datastore forms for #{vars["core"]["space_slug"]}"
@@ -374,7 +398,7 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
     end
   elsif type=="new"
     space_sdk.add_datastore_form(body)
-  elsif type=="deleted" && vars["options"]["delete"] && destinationDatastoreForms.include?(git )
+  elsif type=="deleted" && vars["options"]["delete"] && destinationDatastoreForms.include?(file_name )
     #Delete form is disabled
     #space_sdk.delete_datastore_form(file_name)
   end
@@ -468,7 +492,6 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
     space_sdk.delete_webhook_on_space(file_name)
   end
 }
-
 
 # ------------------------------------------------------------------------------
 # import kapp data
@@ -693,6 +716,31 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
     end
   }
 
+  # ------------------------------------------------------------------------------
+  # Migrate Kapp Web APIs
+  # ------------------------------------------------------------------------------
+  logger.info "Importing Web APIs for the #{kapp_slug} Kapp"
+
+  destinationWebAPIs = JSON.parse(space_sdk.find_kapp_webapis(kapp_slug).content_string)['webApis'].map{ |definition|  definition['slug']}
+  file_path = "core/space/kapps/#{kapp_slug}/webApis/*"
+
+  g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
+    type = file_diff.type
+    body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
+    file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
+    if type=="modified"
+      if destinationWebAPIs.include?(body['slug'])
+        space_sdk.update_kapp_webapi(kapp_slug ,body['slug'], body)
+      elsif destinationWebAPIs.include?(file_name)
+        space_sdk.update_kapp_webapi(kapp_slug ,file_name, body)
+      end
+    elsif type=="new"
+      space_sdk.add_kapp_webapi(kapp_slug, body)
+    elsif type=="deleted" && vars["options"]["delete"] && destinationWebAPIs.include?(file_name)
+      space_sdk.delete_kapp_webapi(kapp_slug, file_name)
+    end
+  } 
+  
   # ------------------------------------------------------------------------------
   # End of Kapp Import Loop
   # ------------------------------------------------------------------------------
