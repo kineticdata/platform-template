@@ -694,7 +694,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # delete forms
   # ------------------------------------------------------------------------------
   destinationForms.each { |slug|
-    if vars["options"]["delete"] && !sourceForms.include?(form)
+    if vars["options"]["delete"] && !sourceForms.include?(slug)
       #Delete form is disabled
       #space_sdk.delete_form(kapp['slug'], slug)
     end
