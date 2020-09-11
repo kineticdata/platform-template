@@ -1,1 +1,4 @@
 run.rb
+config/*.yml
+!config/servername_environment_import_config.yml
+!config/servername_environment_export_config.yml
