@@ -800,7 +800,7 @@ g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
 
 
 # ------------------------------------------------------------------------------
-# Import Task Trees and Routines
+# Import Task Trees
 # ------------------------------------------------------------------------------
 Dir["#{task_path}/sources/*.json"].each {|source|
   body = JSON.parse(File.read(source))
@@ -831,6 +831,25 @@ Dir["#{task_path}/sources/*.json"].each {|source|
       task_sdk.delete_tree(delete_tree)
     end
   }
+}
+
+# ------------------------------------------------------------------------------
+# Import Routines
+# ------------------------------------------------------------------------------
+logger.info "Importing Routines"
+file_path = "#{task_path}/routines/*.xml"
+g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
+  type = file_diff.type
+  file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.xml','')
+  if type=="modified" || type=="new"
+    file_path = "#{pwd}/#{file_diff.path}"
+    routine_file = File.new(file_path, "rb")
+    task_sdk.import_routinesd(routine_file, true)
+    task_sdk.import_routine(routine_file, true)
+  elsif type=="deleted"
+    title = file_name.split('-').map(&:capitalize).join(' ')
+    task_sdk.delete_tree(title)
+  end
 }
 
 
