@@ -122,6 +122,68 @@ ruby export.rb -c "config/foo-web-server.rb"
 2. Run import script
 3. Validate Results
 
+## Migrated Components
+Below is a list of components and what is migrated as part of the export and import process
+
+### Space
+- Build
+  - Datastores
+  - Datastore Submissions (configurable by datastore slug)
+  - Models
+  - Web APIs
+- Plugins
+  - Bridges (not exported, configuration is unique to each environment)
+  - Handlers
+  - Agent Handlers (not exported)
+  - Sources (not exported, configuration is unique to each environment)
+  - Settings
+    - Details (not exported, configuration is unique to each environment)
+    - Attributes
+    - Platform Components (not exported, configuration is unique to each environment)
+    - Oauth (not exported, configuration is unique to each environment)
+    - Security (not exported)
+    - Workflow 
+      - Engine (not exported)
+      - Categories
+      - Policy Rules
+      - Licenses (not exported)
+  - Teams
+  - Translations (not exported)
+  - Users (not exported)
+- Definitions
+  - Attributes
+    - Space 
+    - User
+    - User Profile
+    - Teams
+    - Datastore Form
+  - Security
+  - Webhooks  
+
+### Kapps
+- Build
+  - Forms
+  - Form Submissions (configurable)
+  - WebAPIs
+- Configuration
+  - Settings 
+    - Details
+    - Attributes
+    - Fields (n/a)
+    - Security
+- Definitions 
+  - Attributes  
+    - Kapp
+    - Category
+    - Form
+  - Categories
+  - Form Types
+  - Security
+  - Webhooks
+
+### Global Workflow
+- Trees
+- Routines
 
 ## Developing
 
