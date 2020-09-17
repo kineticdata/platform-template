@@ -1,7 +1,8 @@
 # platform-template
 ## Overview 
-This repository is designed to migrate Kinetic Core and Task beteen enviroments. Migrations will maintain the unique environmental configurations that allow them to maintain their functionality and connections separate form other environments. (ie Dev, Test, and Prod environmnets)
-
+This repository is designed to migrate Kinetic Core and Task beteen enviroments. Migrations will maintain the unique environmental configurations that allow them to maintain their functionality and connections separate form other environments. (ie Dev, Test, and Prod environmnets) Please see [Migrated Components] (##Migrated Components)
+ below for details on what is included in a migration.
+``
 Leverages the Kinetic Ruby SDK as a gem. Docs can be found here https://rubygems.org/gems/kinetic_sdk
 
 ## Usage
