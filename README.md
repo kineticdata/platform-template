@@ -65,34 +65,36 @@ Create an import Config for your destination servers (ie: Test, Stage, Productio
 
 ### 4. Initial Export
 1. Export environment determined above using export.rb *(This creates 2 root directories "Core" and "Task" with the contnets of the environement.)
-``` ruby export.rb -c "config/<YOUR_SOUCE_SERVER_CONFIG_FILE>.yaml"
+``` ruby export.rb -c "config/<YOUR_SOUCE_SERVER_CONFIG_FILE>.yaml "```
 2. Commit your changes into a version control system.
-```bash
-git add .
-git commit -m "Initial commit of my template"
-```
-(If you have updated the remote repsitory in the steps above you may push the commit to it)
-```
-git push
-```
+``` git add . ```
+3. Commit chnages to git
+```git commit -m "Initial commit of my template" ```
+4. If you have updated the remote repsitory in the steps above you may push the commit to it
+```git push ```
 
-### Compare Dev and Prod
-
-
-### Get an export from the development environment
-1. Point export script at the source server
-2. Export Environment using export.rb
-```
-ruby export.rb -c "config/foo-web-server.rb"
-```
-3. Check for differences (git diff)
-4. Add desired changes to the repositiory
-5. Commit changes.
+There is now a repository to help track changes and maintian the Kinetic Core and Task environment.
 
 ### Promote Changes to a new Environment
-1. Point import script at the source server
-2. Run import script
-3. Validate Results
+There is now an inital export of whatever is determined to be the baseline export. There are a couple of optons on how to promote the changes to another server.
+
+1. Use import.rb
+   This script migrates everthing from an export to another environment. Everything will be migrated even if the source and destination are the same.  In the case of a Form it will be updated even if it is the same and the "Updated At" date and time will be modified for all forms.  
+   
+   This is the sure way to update an environment to get it into sync with another.
+   This script may be used at any point in time to migrate the current state contained in the export to another server.
+   
+2. use import_git_diff.rb
+   This script will import the newest changes. Only the changes since the last git commit to the directory will be migrated.  This script works best when it is part of a process that is used consistently. Any one off changes made to a server outside of this script will get differences out of sync.  The differences are also determined from one export to another and **not** between the export definitions and the destination server.
+   
+   This is how this script can be used.
+   - The source and destination environment must be in sync to start.
+   - Changes are made in the source enviroment
+   - The ruby script export.rb is ran for the source environment
+   - ```git status ``` is ran to see what has changed.
+   - ```git add``` is ran to include only the changes that should be included in a migration
+   - ```git commit``` is ran to commit the changed files
+   - The ruby import_git_diff is ran with the import configuration script for the destination server to migrate only the recent changes from teh destination server.
 
 ## Configuration Files
 The srcipts use YAML files to define the server connection parameters and the scripts behavior.  A config file should be created for each server and script combination. Example configuration files can be found in the /config folder.
