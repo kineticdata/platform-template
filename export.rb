@@ -205,7 +205,7 @@ logger.info "  - exporting and writing submission data"
     space_sdk.find_form(item['kappSlug'], item['formSlug'], {"include" => "fields.details"})
   
   # get attachment fields from form definition
-  attachement_files = JSON.parse(attachment_form.content_string)['form']['fields'].select{ | file | file['dataType'] == "file" }.map { | field | field['name']  }
+  attachement_files = attachment_form.status == 200 ? JSON.parse(attachment_form.content_string)['form']['fields'].select{ | file | file['dataType'] == "file" }.map { | field | field['name']  } :{}
   
   # set base url for attachments
   attachment_base_url = is_datastore ?
