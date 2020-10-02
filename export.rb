@@ -190,10 +190,10 @@ Dir["#{core_path}/**/*.json"].each do |filename|
 end
 
 # export submissions
-logger.info "  - exporting and writing submission data"
+logger.info "Exporting and writing submission data"
 (SUBMISSIONS_TO_EXPORT || []).each do |item|
   is_datastore = item["datastore"] || false
-  logger.info "    - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
+  logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
   submission_path = is_datastore ?
     "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
@@ -205,7 +205,7 @@ logger.info "  - exporting and writing submission data"
     space_sdk.find_form(item['kappSlug'], item['formSlug'], {"include" => "fields.details"})
   
   # get attachment fields from form definition
-  attachement_files = attachment_form.status == 200 ? JSON.parse(attachment_form.content_string)['form']['fields'].select{ | file | file['dataType'] == "file" }.map { | field | field['name']  } :{}
+  attachement_files = attachment_form.status == 200 ? attachment_form.content['form']['fields'].select{ | file | file['dataType'] == "file" }.map { | field | field['name']  } : {}
   
   # set base url for attachments
   attachment_base_url = is_datastore ?
@@ -225,7 +225,7 @@ logger.info "  - exporting and writing submission data"
   file.truncate(0)
   response = nil
   begin
-    # get submissions
+    # get submissions from datastore form or form
     response = is_datastore ?
       space_sdk.find_all_form_datastore_submissions(item['formSlug'], params).content :
       space_sdk.find_form_submissions(item['kappSlug'], item['formSlug'], params).content
@@ -244,7 +244,7 @@ logger.info "  - exporting and writing submission data"
             # dir and file name to write attachment
             download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
             # url to retrieve the attachment
-            logger.info url = URI.escape("#{attachment_base_url}/submissions/#{submission_id}/files/#{field}/#{index}/#{attachment['name']}")
+            url = URI.escape("#{attachment_base_url}/submissions/#{submission_id}/files/#{field}/#{index}/#{attachment['name']}")
             # retrieve and write attachment
             space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
           }
