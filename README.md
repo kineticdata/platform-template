@@ -12,7 +12,7 @@ The scripts in this repository are examples that may or may not meet your specif
 The scripts have been tested in Kinops and on premise installations with configuration differences.
 
 The included Scripts are:
-- **export.rb: E**xports an entire Space from the specified server.. (including components which may not be migrated in the scripts below)
+- **export.rb: **Exports an entire Space from the specified server.. (including components which may not be migrated in the scripts below)
 - **import.rb:** Migrates components to the specified server.
 - **import_git_diff.rb:** Migrates only the recently changed components as identified by git to the specified server.
 
@@ -66,7 +66,7 @@ Create an import Config for your destination servers (ie: Test, Stage, Productio
 ### 4. Initial Export
 1. Export environment determined above using export.rb *(This creates 2 root directories "Core" and "Task" with the contnets of the environement.)
 ``` 
-ruby export.rb -c "config/<YOUR_SOUCE_SERVER_CONFIG_FILE>.yaml "
+ruby export.rb -c "config/<YOUR_SOUCE_SERVER_CONFIG_FILE>.yml "
 ```
 2. Commit your changes into a version control system.
 ```
@@ -103,7 +103,7 @@ There is now an inital export of whatever was determined to be the baseline expo
    - ```git add``` is ran to include only the changes that should be included in a migration
    - ```git commit``` is ran to commit the changed files
    - To see what will be migrated ```git diff HEAD^ HEAD``` may be run
-   - Run ```ruby import_git_diff -c "config/<YOUR_SOUCE_SERVER_CONFIG_FILE>.yaml "``` with the import configuration script for the destination server to migrate only the recent changes from teh destination server.
+   - Run ```ruby import_git_diff -c "config/<YOUR_SOUCE_SERVER_CONFIG_FILE>.yml "``` with the import configuration script for the destination server to migrate only the recent changes from teh destination server.
 
 ## Configuration Files
 The srcipts use YAML files to define the server connection parameters and the scripts behavior.  A config file should be created for each server and script combination. Example configuration files can be found in the /config folder.
