@@ -176,7 +176,7 @@ Below is a list of components and what is migrated as part of the export and imp
   - Sources (not exported, configuration is unique to each environment)
   - Settings
     - Details (not exported, configuration is unique to each environment)
-    - Attributes
+    - Attributes (not imported, configuration can unique to each environment)
     - Platform Components (not exported, configuration is unique to each environment)
     - Oauth (not exported, configuration is unique to each environment)
     - Security (not exported)
