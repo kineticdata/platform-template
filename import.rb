@@ -126,7 +126,7 @@ end
 vars["options"] = !vars["options"].nil? ? vars["options"] : {}
 vars["options"]["delete"] = !vars["options"]["delete"].nil? ? vars["options"]["delete"] : false
 
-logger.info "Importing using the config: #{vars}"
+logger.info "Importing using the config: #{JSON.pretty_generate(vars)}"
 
 
 space_sdk = KineticSdk::Core.new({
