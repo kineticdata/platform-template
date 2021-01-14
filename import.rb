@@ -28,7 +28,7 @@
   options:
     delete: true
   task:
-    # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic/kinetic-task
+    # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic-task
     server_url: https://web-server.com
     service_user_username: <USER_NAME>
     service_user_password: <PASSWORD>
@@ -91,6 +91,7 @@ task_path = File.join(platform_template_path, "task")
 # ------------------------------------------------------------------------------
 
 
+
 # ------------------------------------------------------------------------------
 # constants
 # ------------------------------------------------------------------------------
@@ -126,7 +127,7 @@ end
 vars["options"] = !vars["options"].nil? ? vars["options"] : {}
 vars["options"]["delete"] = !vars["options"]["delete"].nil? ? vars["options"]["delete"] : false
 
-logger.info "Importing using the config: #{vars}"
+logger.info "Importing using the config: #{JSON.pretty_generate(vars)}"
 
 
 space_sdk = KineticSdk::Core.new({
@@ -153,7 +154,7 @@ end
 # ------------------------------------------------------------------------------
 
 sourceSpaceAttributeArray = []
-destinationSpaceAttributeArray = JSON.parse(space_sdk.find_space_attribute_definitions().content_string)['spaceAttributeDefinitions'].map { |definition|  definition['name']}
+destinationSpaceAttributeArray = (space_sdk.find_space_attribute_definitions().content['spaceAttributeDefinitions']|| {}).map { |definition|  definition['name']}
 
 if File.file?(file = "#{core_path}/space/spaceAttributeDefinitions.json")
   spaceAttributeDefinitions = JSON.parse(File.read(file))
@@ -168,9 +169,9 @@ if File.file?(file = "#{core_path}/space/spaceAttributeDefinitions.json")
   }  
 end   
 
-destinationSpaceAttributeArray.each { | spaceAttribute |
-  if vars["options"]["delete"] && !sourceSpaceAttributeArray.include?(spaceAttribute)
-      space_sdk.delete_space_attribute_definition(spaceAttribute)
+destinationSpaceAttributeArray.each { | attribute |
+  if vars["options"]["delete"] && !sourceSpaceAttributeArray.include?(attribute)
+      space_sdk.delete_space_attribute_definition(attribute)
   end
 }
 
@@ -178,7 +179,7 @@ destinationSpaceAttributeArray.each { | spaceAttribute |
 # Update User Attributes
 # ------------------------------------------------------------------------------
 sourceUserAttributeArray = []
-destinationUserAttributeArray = JSON.parse(space_sdk.find_user_attribute_definitions().content_string)['userAttributeDefinitions'].map { |definition|  definition['name']}
+destinationUserAttributeArray = (space_sdk.find_user_attribute_definitions().content['userAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
 if File.file?(file = "#{core_path}/space/userAttributeDefinitions.json")
   userAttributeDefinitions = JSON.parse(File.read(file))
@@ -192,9 +193,9 @@ if File.file?(file = "#{core_path}/space/userAttributeDefinitions.json")
   }  
 end
 
-destinationUserAttributeArray.each { | spaceAttribute |
-  if vars["options"]["delete"] && !sourceUserAttributeArray.include?(spaceAttribute)
-      space_sdk.delete_user_attribute_definition(spaceAttribute)
+destinationUserAttributeArray.each { | attribute |
+  if vars["options"]["delete"] && !sourceUserAttributeArray.include?(attribute)
+      space_sdk.delete_user_attribute_definition(attribute)
   end
 }
 # ------------------------------------------------------------------------------
@@ -202,7 +203,7 @@ destinationUserAttributeArray.each { | spaceAttribute |
 # ------------------------------------------------------------------------------
 
 sourceUserProfileAttributeArray = []
-destinationUserProfileAttributeArray = JSON.parse(space_sdk.find_user_profile_attribute_definitions().content_string)['userProfileAttributeDefinitions'].map { |definition|  definition['name']}
+destinationUserProfileAttributeArray = (space_sdk.find_user_profile_attribute_definitions().content['userProfileAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
 if File.file?(file = "#{core_path}/space/userProfileAttributeDefinitions.json")
   userProfileAttributeDefinitions = JSON.parse(File.read(file))
@@ -217,9 +218,9 @@ if File.file?(file = "#{core_path}/space/userProfileAttributeDefinitions.json")
   }  
 end  
 
-destinationUserProfileAttributeArray.each { | spaceAttribute |
-  if vars["options"]["delete"] && !sourceUserProfileAttributeArray.include?(spaceAttribute)
-      space_sdk.delete_user_profile_attribute_definition(spaceAttribute)
+destinationUserProfileAttributeArray.each { | attribute |
+  if vars["options"]["delete"] && !sourceUserProfileAttributeArray.include?(attribute)
+      space_sdk.delete_user_profile_attribute_definition(attribute)
   end
 }
 
@@ -229,7 +230,7 @@ destinationUserProfileAttributeArray.each { | spaceAttribute |
 # ------------------------------------------------------------------------------
 
 sourceTeamAttributeArray = []
-destinationTeamAttributeArray = JSON.parse(space_sdk.find_team_attribute_definitions().content_string)['teamAttributeDefinitions'].map { |definition|  definition['name']}
+destinationTeamAttributeArray = (space_sdk.find_team_attribute_definitions().content['teamAttributeDefinitions']|| {}).map { |definition|  definition['name']}
 
 if File.file?(file = "#{core_path}/space/teamAttributeDefinitions.json")
   teamAttributeDefinitions = JSON.parse(File.read(file))
@@ -243,9 +244,9 @@ if File.file?(file = "#{core_path}/space/teamAttributeDefinitions.json")
   }  
 end
 
-destinationTeamAttributeArray.each { | spaceAttribute |
-  if vars["options"]["delete"] && !sourceTeamAttributeArray.include?(spaceAttribute)
-      space_sdk.delete_team_attribute_definition(spaceAttribute)
+destinationTeamAttributeArray.each { | attribute |
+  if vars["options"]["delete"] && !sourceTeamAttributeArray.include?(attribute)
+      space_sdk.delete_team_attribute_definition(attribute)
   end
 }
 
@@ -255,7 +256,7 @@ destinationTeamAttributeArray.each { | spaceAttribute |
 # ------------------------------------------------------------------------------
 
 sourceDatastoreAttributeArray = []
-destinationDatastoreAttributeArray = JSON.parse(space_sdk.find_datastore_form_attribute_definitions().content_string)['datastoreFormAttributeDefinitions'].map { |definition|  definition['name']}
+destinationDatastoreAttributeArray =(space_sdk.find_datastore_form_attribute_definitions().content['datastoreFormAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
 if File.file?(file = "#{core_path}/space/datastoreFormAttributeDefinitions.json")
   datastoreFormAttributeDefinitions = JSON.parse(File.read(file))
@@ -269,10 +270,10 @@ if File.file?(file = "#{core_path}/space/datastoreFormAttributeDefinitions.json"
   }  
 end
 
-destinationDatastoreAttributeArray.each { | name |
-  if vars["options"]["delete"] && !sourceDatastoreAttributeArray.include?(name)
+destinationDatastoreAttributeArray.each { | attribute |
+  if vars["options"]["delete"] && !sourceDatastoreAttributeArray.include?(attribute)
       #Delete form is disabled
-      #space_sdk.delete_datastore_form_attribute_definition(name)
+      #space_sdk.delete_datastore_form_attribute_definition(attribute)
   end
 }
 
@@ -282,7 +283,7 @@ destinationDatastoreAttributeArray.each { | name |
 # ------------------------------------------------------------------------------
 
 sourceSecurityPolicyArray = []
-destinationSecurityPolicyArray = JSON.parse(space_sdk.find_space_security_policy_definitions().content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
+destinationSecurityPolicyArray = (space_sdk.find_space_security_policy_definitions().content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
 
 if File.file?(file = "#{core_path}/space/securityPolicyDefinitions.json")
   securityPolicyDefinitions = JSON.parse(File.read(file))
@@ -296,9 +297,9 @@ if File.file?(file = "#{core_path}/space/securityPolicyDefinitions.json")
   }  
 end
 
-destinationSecurityPolicyArray.each { | spaceAttribute |
-  if vars["options"]["delete"] && !sourceSecurityPolicyArray.include?(spaceAttribute)
-      space_sdk.delete_space_security_policy_definition(spaceAttribute)
+destinationSecurityPolicyArray.each { | attribute |
+  if vars["options"]["delete"] && !sourceSecurityPolicyArray.include?(attribute)
+      space_sdk.delete_space_security_policy_definition(attribute)
   end
 }
 
@@ -309,7 +310,7 @@ destinationSecurityPolicyArray.each { | spaceAttribute |
 # ------------------------------------------------------------------------------
 
 destinationModels = space_sdk.find_bridge_models()
-destinationModels_Array = JSON.parse(destinationModels.content_string)['models'].map{ |model| model['activeMappingName']}
+destinationModels_Array = (destinationModels.content['models'] || {}).map{ |model| model['activeMappingName']}
 
 Dir["#{core_path}/space/models/*.json"].each{ |model|
   body = JSON.parse(File.read(model))
@@ -337,7 +338,8 @@ end
 # ------------------------------------------------------------------------------
 
 sourceSpaceWebApisArray = []
-destinationSpaceWebApisArray = JSON.parse(space_sdk.find_space_webapis().content_string)['webApis'].map { |definition|  definition['slug']}
+destinationSpaceWebApisArray = (space_sdk.find_space_webapis().content['webApis'] || {}).map { |definition|  definition['slug']}
+
   
 Dir["#{core_path}/space/webApis/*"].each{ |file|
   body = JSON.parse(File.read(file))
@@ -367,8 +369,7 @@ sourceDatastoreForms = [] #From import data
 
 logger.info "Importing datastore forms for #{vars["core"]["space_slug"]}"
 
-  datastoreForms = space_sdk.find_datastore_forms()
-  destinationDatastoreForms = JSON.parse(datastoreForms.content_string)['forms'].map{ |datastore| datastore['slug']}
+  destinationDatastoreForms = (space_sdk.find_datastore_forms().content['forms'] || {}).map{ |datastore| datastore['slug']}
   Dir["#{core_path}/space/datastore/forms/*.json"].each { |datastore|
     body = JSON.parse(File.read(datastore))
     sourceDatastoreForms.push(body['slug'])
@@ -394,30 +395,36 @@ destinationDatastoreForms.each { |datastore_slug|
 # ------------------------------------------------------------------------------
 # Import Datastore Data
 # ------------------------------------------------------------------------------
-destinationDatastoreFormSubmissions = {}
-sourceDatastoreFormSubmissions = {}
-
-# import kapp & datastore submissions
-Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each do |filename|
+Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each { |filename|
+  dir = File.dirname(filename)
   form_slug = filename.match(/forms\/(.+)\/submissions\.ndjson/)[1]
   (space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions'] || []).each { |submission|
     space_sdk.delete_datastore_submission(submission['id'])
   }
-  File.readlines(filename).each do |line|
-    submission = JSON.parse(line)
+  File.readlines(filename).each { |line|
+    submission = JSON.parse(line) 
+    submission["values"].map { |field, value|
+        # if the value contains an array of files
+        if value.is_a?(Array) && !value.empty? && value.first.is_a?(Hash) && value.first.has_key?('path')
+          value.map.with_index { |file, index|
+            # add 'path' key to the attribute value indicating the location of the attachment          
+            file['path'] = "#{dir}#{file['path']}"
+          }
+        end
+    }
     body = { 
       "values" => submission["values"],
       "coreState" => submission["coreState"]
     }
     space_sdk.add_datastore_submission(form_slug, body).content
-  end
-end
+  }
+}
 
 # ------------------------------------------------------------------------------
 # import space teams
 # ------------------------------------------------------------------------------
 SourceTeamArray = []
-destinationTeamsArray = JSON.parse(space_sdk.find_teams().content_string)['teams'].map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
+destinationTeamsArray = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
 Dir["#{core_path}/space/teams/*.json"].each{ |team|
   body = JSON.parse(File.read(team))
   if !destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']  }.nil?
@@ -472,7 +479,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/kappAttributeDefinitions.json")
     sourceKappAttributeArray = []
-    destinationKappAttributeArray = JSON.parse(space_sdk.find_kapp_attribute_definitions(kapp['slug']).content_string)['kappAttributeDefinitions'].map { |definition|  definition['name']}
+    destinationKappAttributeArray = (space_sdk.find_kapp_attribute_definitions(kapp['slug']).content['kappAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     kappAttributeDefinitions = JSON.parse(File.read(file))
     kappAttributeDefinitions.each { |attribute|
         if destinationKappAttributeArray.include?(attribute['name'])
@@ -497,7 +504,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categoryAttributeDefinitions.json")
     sourceKappCategoryArray = []
-    destinationKappAttributeArray = JSON.parse(space_sdk.find_category_attribute_definitions(kapp['slug']).content_string)['categoryAttributeDefinitions'].map { |definition|  definition['name']}  
+    destinationKappAttributeArray = (space_sdk.find_category_attribute_definitions(kapp['slug']).content['categoryAttributeDefinitions'] || {}).map { |definition|  definition['name']}  
     kappCategoryDefinitions = JSON.parse(File.read(file))
     kappCategoryDefinitions.each { |attribute|
         if destinationKappAttributeArray.include?(attribute['name'])
@@ -522,7 +529,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/formAttributeDefinitions.json")
     sourceFormAttributeArray = []
-    destinationFormAttributeArray = JSON.parse(space_sdk.find_form_attribute_definitions(kapp['slug']).content_string)['formAttributeDefinitions'].map { |definition|  definition['name']}
+    destinationFormAttributeArray = (space_sdk.find_form_attribute_definitions(kapp['slug']).content['formAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     formAttributeDefinitions = JSON.parse(File.read(file))
     formAttributeDefinitions.each { |attribute|
         if destinationFormAttributeArray.include?(attribute['name'])
@@ -547,7 +554,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/formTypes.json")
     sourceFormTypesArray = []
-    destinationFormTypesArray = JSON.parse(space_sdk.find_formtypes(kapp['slug']).content_string)['formTypes'].map { |formTypes|  formTypes['name']}
+    destinationFormTypesArray = (space_sdk.find_formtypes(kapp['slug']).content['formTypes'] || {}).map { |formTypes|  formTypes['name']}
     formTypes = JSON.parse(File.read(file))
     formTypes.each { |body|
       if destinationFormTypesArray.include?(body['name'])
@@ -572,7 +579,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/securityPolicyDefinitions.json")
     sourceSecurtyPolicyArray = []
-    destinationSecurtyPolicyArray = JSON.parse(space_sdk.find_security_policy_definitions(kapp['slug']).content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
+    destinationSecurtyPolicyArray = (space_sdk.find_security_policy_definitions(kapp['slug']).content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
     securityPolicyDefinitions = JSON.parse(File.read(file))
     securityPolicyDefinitions.each { |attribute|
         if destinationSecurtyPolicyArray.include?(attribute['name'])
@@ -596,7 +603,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categories.json")
     sourceCategoryArray = []
-    #destinationCategoryArray = JSON.parse(space_sdk.find_categories(kapp['slug']).content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
+    #destinationCategoryArray = (space_sdk.find_categories(kapp['slug']).content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
     categories = JSON.parse(File.read(file))
     categories.each { |attribute|
       #if destinationCategoryArray.include?(attribute['name'])
@@ -623,7 +630,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # import space webhooks
   # ------------------------------------------------------------------------------
   sourceSpaceWebhooksArray = []
-  destinationSpaceWebhooksArray = JSON.parse(space_sdk.find_webhooks_on_space().content_string)['webhooks'].map{ |webhook| webhook['name']}
+  destinationSpaceWebhooksArray = (space_sdk.find_webhooks_on_space().content['webhooks'] || {}).map{ |webhook| webhook['name']}
 
   Dir["#{core_path}/space/webhooks/*.json"].each{ |file|
     webhook = JSON.parse(File.read(file))
@@ -653,7 +660,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   webhooks_on_kapp = space_sdk.find_webhooks_on_kapp(kapp['slug']) 
   
   if webhooks_on_kapp.code=="200" 
-    destinationWebhookArray = JSON.parse(webhooks_on_kapp.content_string)['webhooks'].map { |definition|  definition['name']}
+    destinationWebhookArray = (webhooks_on_kapp.content['webhooks'] || {}).map { |definition|  definition['name']}
     Dir["#{core_path}/space/kapps/#{kapp['slug']}/webhooks/*.json"].each{ |webhookFile|
         webhookDef = JSON.parse(File.read(webhookFile))
         if destinationWebhookArray.include?(webhookDef['name'])
@@ -679,7 +686,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # Add Kapp Forms
   # ------------------------------------------------------------------------------
   sourceForms = [] #From import data
-  destinationForms = JSON.parse(space_sdk.find_forms(kapp['slug']).content_string)['forms'].map{ |form| form['slug']}
+  destinationForms = (space_sdk.find_forms(kapp['slug']).content['forms'] || {}).map{ |form| form['slug']}
   Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"].each { |form|
     properties = File.read(form)
     form = JSON.parse(properties)
@@ -701,10 +708,41 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   } 
 
   # ------------------------------------------------------------------------------
+  # Import Kapp Form Data
+  # ------------------------------------------------------------------------------
+  Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/**/submissions*.ndjson"].sort.each { |filename|
+    dir = File.dirname(filename)
+    form_slug = filename.match(/forms\/(.+)\/submissions\.ndjson/)[1]
+    
+    # This code could delete all submissions form the form before importing new data
+    # It is commented out because it could be dangerous to have in place and the delete_submission method doesn't exist currently.
+    #(space_sdk.find_all_form_submissions(kapp['slug'], form_slug).content['submissions'] || []).each { |submission|
+    #  space_sdk.delete_submission(submission['id'])
+    #}
+    
+    File.readlines(filename).each { |line|
+      submission = JSON.parse(line) 
+      submission["values"].map { |field, value|
+          # if the value contains an array of files
+          if value.is_a?(Array) && !value.empty? && value.first.is_a?(Hash) && value.first.has_key?('path')
+            value.map.with_index { |file, index|
+              # add 'path' key to the attribute value indicating the location of the attachment
+              file['path'] = "#{dir}#{file['path']}"
+            }
+          end
+      }
+      body = { 
+        "values" => submission["values"],
+        "coreState" => submission["coreState"]
+      }
+      space_sdk.add_submission(kapp['slug'], form_slug, body).content
+    }
+  }
+  # ------------------------------------------------------------------------------
   # Add Kapp Web APIs
   # ------------------------------------------------------------------------------   
   sourceWebApisArray = []
-  destinationWebApisArray = JSON.parse(space_sdk.find_kapp_webapis(kapp['slug']).content_string)['webApis'].map { |definition|  definition['slug']}
+  destinationWebApisArray = (space_sdk.find_kapp_webapis(kapp['slug']).content['webApis'] || {}).map { |definition|  definition['slug']}
   Dir["#{core_path}/space/kapps/#{kapp['slug']}/webApis/*"].each { |webApi|
     body = JSON.parse(File.read(webApi))
     if destinationWebApisArray.include?(body['slug'])
@@ -765,7 +803,7 @@ task_sdk.import_trees(true)
 # ------------------------------------------------------------------------------
 
 sourceCategories = [] #From import data
-destinationCategories = JSON.parse(task_sdk.find_categories().content_string)['categories'].map{ |category| category['name']}
+destinationCategories = (task_sdk.find_categories().content['categories'] || {}).map{ |category| category['name']}
 
 Dir["#{task_path}/categories/*.json"].each { |file|
   category = JSON.parse(File.read(file))
@@ -791,7 +829,7 @@ destinationCategories.each { |category|
 # import task policy rules
 # ------------------------------------------------------------------------------
 
-destinationPolicyRuleArray = JSON.parse(task_sdk.find_policy_rules().content_string)['policyRules']
+destinationPolicyRuleArray = task_sdk.find_policy_rules().content['policyRules']
 sourcePolicyRuleArray = Dir["#{task_path}/policyRules/*.json"].map{ |file| 
     rule = JSON.parse(File.read(file))
     {"name" => rule['name'], "type" => rule['type']}
@@ -821,7 +859,7 @@ destinationPolicyRuleArray.each { |rule|
 
 # identify Trees and Routines on destination
 destinationtrees = []
-trees = JSON.parse(task_sdk.find_trees().content_string)
+trees = task_sdk.find_trees().content
 (trees['trees'] || []).each { |tree|
   destinationtrees.push( tree['title'] )
 }
