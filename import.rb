@@ -395,24 +395,30 @@ destinationDatastoreForms.each { |datastore_slug|
 # ------------------------------------------------------------------------------
 # Import Datastore Data
 # ------------------------------------------------------------------------------
-destinationDatastoreFormSubmissions = {}
-sourceDatastoreFormSubmissions = {}
-
-# import kapp & datastore submissions
-Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each do |filename|
+Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each { |filename|
+  dir = File.dirname(filename)
   form_slug = filename.match(/forms\/(.+)\/submissions\.ndjson/)[1]
   (space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions'] || []).each { |submission|
     space_sdk.delete_datastore_submission(submission['id'])
   }
-  File.readlines(filename).each do |line|
-    submission = JSON.parse(line)
+  File.readlines(filename).each { |line|
+    submission = JSON.parse(line) 
+    submission["values"].map { |field, value|
+        # if the value contains an array of files
+        if value.is_a?(Array) && !value.empty? && value.first.is_a?(Hash) && value.first.has_key?('path')
+          value.map.with_index { |file, index|
+            # add 'path' key to the attribute value indicating the location of the attachment          
+            file['path'] = "#{dir}#{file['path']}"
+          }
+        end
+    }
     body = { 
       "values" => submission["values"],
       "coreState" => submission["coreState"]
     }
     space_sdk.add_datastore_submission(form_slug, body).content
-  end
-end
+  }
+}
 
 # ------------------------------------------------------------------------------
 # import space teams
@@ -701,6 +707,37 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     end
   } 
 
+  # ------------------------------------------------------------------------------
+  # Import Kapp Form Data
+  # ------------------------------------------------------------------------------
+  Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/**/submissions*.ndjson"].sort.each { |filename|
+    dir = File.dirname(filename)
+    form_slug = filename.match(/forms\/(.+)\/submissions\.ndjson/)[1]
+    
+    # This code could delete all submissions form the form before importing new data
+    # It is commented out because it could be dangerous to have in place and the delete_submission method doesn't exist currently.
+    #(space_sdk.find_all_form_submissions(kapp['slug'], form_slug).content['submissions'] || []).each { |submission|
+    #  space_sdk.delete_submission(submission['id'])
+    #}
+    
+    File.readlines(filename).each { |line|
+      submission = JSON.parse(line) 
+      submission["values"].map { |field, value|
+          # if the value contains an array of files
+          if value.is_a?(Array) && !value.empty? && value.first.is_a?(Hash) && value.first.has_key?('path')
+            value.map.with_index { |file, index|
+              # add 'path' key to the attribute value indicating the location of the attachment
+              file['path'] = "#{dir}#{file['path']}"
+            }
+          end
+      }
+      body = { 
+        "values" => submission["values"],
+        "coreState" => submission["coreState"]
+      }
+      space_sdk.add_submission(kapp['slug'], form_slug, body).content
+    }
+  }
   # ------------------------------------------------------------------------------
   # Add Kapp Web APIs
   # ------------------------------------------------------------------------------   
