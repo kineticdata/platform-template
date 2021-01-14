@@ -28,7 +28,7 @@ options:
   - key
   - handle
 task:
-  # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic/kinetic-task
+  # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic-task
   server_url: https://web-server.com
   service_user_username: <USER_NAME>
   service_user_password: <PASSWORD>
