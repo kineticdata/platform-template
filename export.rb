@@ -34,7 +34,7 @@
     - key
     - handle
   task:
-    # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic/kinetic-task
+    # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic-task
     server_url: https://web-server.com
     service_user_username: <USER_NAME>
     service_user_password: <PASSWORD>
@@ -197,7 +197,7 @@ logger.info "Exporting and writing submission data"
   # build directory to write files to
   submission_path = is_datastore ?
     "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
-    "#{core_path}/kapps/#{item['kappSlug']}/forms/#{item['formSlug']}"
+    "#{core_path}/space/kapps/#{item['kappSlug']}/forms/#{item['formSlug']}"
   
   # get attachment fields from form definition
   attachment_form = is_datastore ?
@@ -247,6 +247,8 @@ logger.info "Exporting and writing submission data"
             url = URI.escape("#{attachment_base_url}/submissions/#{submission_id}/files/#{field}/#{index}/#{attachment['name']}")
             # retrieve and write attachment
             space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
+            # add the "path" key to indicate the attachment's location
+            attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
           }
         }
         # append each submission (removing the submission unwanted attributes)
