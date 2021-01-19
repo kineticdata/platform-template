@@ -409,28 +409,34 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
 # Import Datastore Data
 # ------------------------------------------------------------------------------
 logger.info "Importing datastore submissions for #{vars["core"]["space_slug"]}"
-destinationDatastoreFormSubmissions = {}
-sourceDatastoreFormSubmissions = {}
 file_path = "core/space/datastore/forms/\*/\*.ndjson"
-
 # import kapp & datastore submissions
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   type = file_diff.type
+  dir = File.dirname(file_diff.path)
   # get the form slug from the 2nd to last place in the path of the submission.ndjson file (ie: core\space\datastore\forms\alert\submissions.ndjson)
   form_slug = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}[-2]
   Array(space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions']).each { |submission|
     space_sdk.delete_datastore_submission(submission['id'])
   }
-  File.readlines("#{pwd}/#{file_diff.path}").each do |line|
+  File.readlines("#{pwd}/#{file_diff.path}").each { |line|
     submission = JSON.parse(line)
+    submission["values"].map { |field, value|
+      # if the value contains an array of files
+      if value.is_a?(Array) && !value.empty? && value.first.is_a?(Hash) &&  value.first.has_key?('path')
+        value.map.with_index { |file, index|
+          # add 'path' key to the attribute value indicating the location of the attachment          
+          file['path'] = "#{pwd}/#{dir}#{file['path']}"
+        }
+      end
+    }
     body = {
       "values" => submission["values"],
       "coreState" => submission["coreState"]
     }
     space_sdk.add_datastore_submission(form_slug, body).content
-  end
+  }
 }
-
 
 # ------------------------------------------------------------------------------
 # import space teams
@@ -714,6 +720,44 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
       #Delete form is disabled
       #space_sdk.delete_form(kapp_slug, file_name)
     end
+  }
+  
+  # ------------------------------------------------------------------------------
+  # Import Kapp Form Data
+  # ------------------------------------------------------------------------------
+  logger.info "Importing kapp form submissions for the #{kapp_slug} Kapp"
+  file_path = "core/space/kapps/#{kapp_slug}/forms/**/submissions*.ndjson"
+
+  # import kapp & datastore submissions
+  g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
+    type = file_diff.type
+    dir = File.dirname(file_diff.path)
+    # get the form slug from the 2nd to last place in the path of the submission.ndjson file (ie: core\space\datastore\forms\alert\submissions.ndjson)
+    form_slug = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}[-2]
+    
+    # This code could delete all submissions form the form before importing new data
+    # It is commented out because it could be dangerous to have in place and the delete_submission method doesn't exist currently.
+    #Array(space_sdk.find_all_form_submissions(kapp_slug, form_slug).content['submissions']).each { |submission|
+    #  space_sdk.delete_submission(submission['id'])
+    #}
+    
+    File.readlines("#{pwd}/#{file_diff.path}").each { |line|
+      submission = JSON.parse(line)
+      submission["values"].map { |field, value|
+        # if the value contains an array of files
+        if value.is_a?(Array) && !value.empty? && value.first.is_a?(Hash) &&  value.first.has_key?('path')
+          value.map.with_index { |file, index|
+            # add 'path' key to the attribute value indicating the location of the attachment          
+            file['path'] = "#{pwd}/#{dir}#{file['path']}"
+          }
+        end
+      }
+      body = {
+        "values" => submission["values"],
+        "coreState" => submission["coreState"]
+      }
+      space_sdk.add_submission(kapp_slug, form_slug, body).content
+    }
   }
 
   # ------------------------------------------------------------------------------
