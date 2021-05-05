@@ -601,7 +601,6 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categories.json")
     sourceCategoryArray = []
-    
     destinationCategoryArray = (space_sdk.find_categories(kapp['slug']).content['categories'] || {}).map { |definition|  definition['slug']}
     categories = JSON.parse(File.read(file))
     categories.each { |attribute|
