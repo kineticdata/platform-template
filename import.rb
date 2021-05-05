@@ -5,7 +5,6 @@
 # Task Sources must be manually maintained
 # Bridges must be added ahead of migration.  /space/plugins/bridges
 # Agent Handlers are not migrated by design.  They intentionally must be manually added.
-# Categories on the Kapp are not updated or deleted from the destination server (see TODO below)
 # Teams are not deleted from destination.  It could be too dangerous to delete them.
 
 # TODO
@@ -599,31 +598,28 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   
   # ------------------------------------------------------------------------------
   # Migrate Kapp Categories
-  # TODO: Add code for find, update, and delete when methods are available in the SDK
   # ------------------------------------------------------------------------------
   if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categories.json")
     sourceCategoryArray = []
-    #destinationCategoryArray = (space_sdk.find_categories(kapp['slug']).content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
+    destinationCategoryArray = (space_sdk.find_categories(kapp['slug']).content['categories'] || {}).map { |definition|  definition['slug']}
     categories = JSON.parse(File.read(file))
     categories.each { |attribute|
-      #if destinationCategoryArray.include?(attribute['name'])
-      # update_category_on_kapp Does not exist as a method in the SDK yet
-      #  space_sdk.update_category_on_kapp(attribute)
-      #else
+      if destinationCategoryArray.include?(attribute['slug'])
+        space_sdk.update_category_on_kapp(kapp['slug'], attribute['slug'], attribute)
+      else
         space_sdk.add_category_on_kapp(kapp['slug'], attribute)
-      #end
-      sourceCategoryArray.push(attribute['name'])
+      end
+      sourceCategoryArray.push(attribute['slug'])
     }
     # ------------------------------------------------------------------------------
     # Delete Kapp Categories
-    # TODO: Add code for delete when methods are available in the SDK
     # ------------------------------------------------------------------------------
      
-    #destinationCategoryArray.each { | attribute |
-    #  if !sourceCategoryArray.include?(attribute)
-    #      space_sdk.delete_security_policy_definition(kapp['slug'],attribute)
-    #  end
-    #}
+    destinationCategoryArray.each { | attribute |
+      if !sourceCategoryArray.include?(attribute)
+          space_sdk.delete_category_on_kapp(kapp['slug'],attribute)
+      end
+    }
   end
 
   # ------------------------------------------------------------------------------
