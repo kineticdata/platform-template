@@ -60,9 +60,6 @@ end
 
 #########################################
 
-# Determine the Present Working Directory
-pwd = File.expand_path(File.dirname(__FILE__))
-
 ARGV << '-h' if ARGV.empty?
 
 # The options specified on the command line will be collected in *options*.
@@ -91,11 +88,11 @@ platform_template_path = File.dirname(File.expand_path(__FILE__))
 core_path = File.join(platform_template_path, "core")
 task_path = File.join(platform_template_path, "task")
 
-
 # determine the directory paths
-pwd = File.dirname(File.expand_path(__FILE__))
+pwd = File.dirname(`git rev-parse --git-dir`)
 
 # setup git
+#g = Git.open(pwd, log: logger)
 g = Git.open(pwd)
 commit_1 = 'HEAD^'
 commit_2 = 'HEAD'
