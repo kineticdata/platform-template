@@ -891,7 +891,6 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   if type=="modified" || type=="new"
     file_path = "#{pwd}/#{file_diff.path}"
     routine_file = File.new(file_path, "rb")
-    task_sdk.import_routinesd(routine_file, true)
     task_sdk.import_routine(routine_file, true)
   elsif type=="deleted"
     title = file_name.split('-').map(&:capitalize).join(' ')
