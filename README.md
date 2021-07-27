@@ -164,31 +164,35 @@ options:
 Below is a list of components and what is migrated as part of the export and import process.  Not included in a migration is Space slug and name, Bundle configuration, Agent URL, Task URL, Oauth, Security, Bridges, Sources (some), and individual Handler configuration.
 
 ### Space
-- Build
-  - Datastores
-  - Datastore Submissions (configurable by datastore slug)
+   
+#### BUILD (Space)
+  - Datastore Forms
+   - Datastore Submissions (configurable by datastore slug)
   - Models
   - Web APIs
-- Plugins
-  - Bridges (not exported, configuration is unique to each environment)
-  - Handlers
-  - Agent Handlers (not exported)
-  - Sources (not exported, configuration is unique to each environment)
-  - Settings
-    - Details (not exported, configuration is unique to each environment)
-    - Attributes (not imported, configuration can unique to each environment)
-    - Platform Components (not exported, configuration is unique to each environment)
-    - Oauth (not exported, configuration is unique to each environment)
-    - Security (not exported)
-    - Workflow 
+   
+#### CONFIGURATION (Space)
+   - Plugins
+      - Bridges (not exported, configuration is unique to each environment)
+      - Handlers
+      - Agent Handlers (not exported)
+      - Sources (not exported, configuration is unique to each environment)
+   - Settings
+      - Details (not exported, configuration is unique to each environment)
+      - Attributes (not imported, configuration can unique to each environment)
+      - Platform Components (not exported, configuration is unique to each environment)
+      - Oauth (not exported, configuration is unique to each environment)
+      - Security (not exported)
+      - Workflow 
       - Engine (not exported)
       - Categories
       - Policy Rules
       - Licenses (not exported)
-  - Teams
-  - Translations (not exported)
-  - Users (not exported)
-- Definitions
+   - Teams
+   - Translations (not exported)
+   - Users (not exported)
+   
+#### DEFINITIONS (Space)
   - Attributes
     - Space 
     - User
@@ -199,17 +203,21 @@ Below is a list of components and what is migrated as part of the export and imp
   - Webhooks  
 
 ### Kapps
-- Build
+   Each Kapp is exported and imported.
+   
+#### BUILD (Kapp)
   - Forms
-  - Form Submissions (configurable)
+     - Form Submissions (configurable)
   - WebAPIs
-- Configuration
+   
+#### CONFIGURATION (Kapp)
   - Settings 
     - Details
     - Attributes
     - Fields (n/a)
     - Security
-- Definitions 
+   
+#### DEFINITIONS  (Kapp)
   - Attributes  
     - Kapp
     - Category
