@@ -166,10 +166,11 @@ Below is a list of components and what is migrated as part of the export and imp
 ### Space
    
 #### BUILD (Space)
-  - Datastore Forms
-   - Datastore Submissions (configurable by datastore slug)
-  - Models
-  - Web APIs
+   - Datastore Forms
+      - Datastore Submissions (configurable by datastore slug)
+   - Kapps (All Kapps are exported and imported, see "Kapps" below)
+   - Models
+   - Web APIs
    
 #### CONFIGURATION (Space)
    - Plugins
