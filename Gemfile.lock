@@ -1,15 +1,15 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    kinetic_sdk (5.0.15)
-      mime-types (= 3.1)
+    kinetic_sdk (5.0.19)
+      mime-types (>= 3.3.1)
       multipart-post (= 2.0.0)
       parallel (= 1.12.1)
       ruby-progressbar (= 1.9.0)
       slugify (= 1.0.7)
-    mime-types (3.1)
+    mime-types (3.3.1)
       mime-types-data (~> 3.2015)
-    mime-types-data (3.2020.1104)
+    mime-types-data (3.2021.0704)
     multipart-post (2.0.0)
     parallel (1.12.1)
     ruby-progressbar (1.9.0)
@@ -21,7 +21,7 @@ PLATFORMS
   x64-mingw32
 
 DEPENDENCIES
-  kinetic_sdk (= 5.0.15)
+  kinetic_sdk (= 5.0.19)
 
 BUNDLED WITH
    2.2.5
