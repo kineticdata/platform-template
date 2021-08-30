@@ -424,7 +424,7 @@ Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each { |fi
 # ------------------------------------------------------------------------------
 SourceTeamArray = []
 destinationTeamsArray = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
-Dir["#{core_path}/space/teams/*.json"].each{ |team|
+(Dir["#{core_path}/space/teams/*.json"] || []).each{ |team|
   body = JSON.parse(File.read(team))
   if !destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']  }.nil?
     space_sdk.update_team(body['slug'], body)
@@ -432,7 +432,7 @@ Dir["#{core_path}/space/teams/*.json"].each{ |team|
     space_sdk.add_team(body)
   end
   #Add Attributes to the Team
-  body['attributes'].each{ | attribute |
+  (body['attributes'] || []).each{ | attribute |
    space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
   }
   SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
@@ -686,11 +686,11 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"].each { |form|
     properties = File.read(form)
     form = JSON.parse(properties)
-    sourceForms.push(form['slug'])
+    sourceForms.push(form['slug'])  
     if destinationForms.include?(form['slug'])
-      space_sdk.update_form(kapp['slug'] ,form['slug'], properties)
-    else
-      space_sdk.add_form(kapp['slug'], properties)
+      space_sdk.update_form(kapp['slug'] ,form['slug'], form)
+    else   
+      space_sdk.add_form(kapp['slug'], form)
     end
   }
   # ------------------------------------------------------------------------------
