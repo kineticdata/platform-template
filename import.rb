@@ -681,28 +681,31 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   # Add Kapp Forms
   # ------------------------------------------------------------------------------
-  sourceForms = [] #From import data
-  destinationForms = (space_sdk.find_forms(kapp['slug']).content['forms'] || {}).map{ |form| form['slug']}
-  Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"].each { |form|
-    properties = File.read(form)
-    form = JSON.parse(properties)
-    sourceForms.push(form['slug'])  
-    if destinationForms.include?(form['slug'])
-      space_sdk.update_form(kapp['slug'] ,form['slug'], form)
-    else   
-      space_sdk.add_form(kapp['slug'], form)
-    end
-  }
-  # ------------------------------------------------------------------------------
-  # delete forms
-  # ------------------------------------------------------------------------------
-  destinationForms.each { |slug|
-    if vars["options"]["delete"] && !sourceForms.include?(slug)
-      #Delete form is disabled
-      #space_sdk.delete_form(kapp['slug'], slug)
-    end
-  } 
-
+  
+  if (forms = Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"]).length > 0 
+    sourceForms = [] #From import data
+    destinationForms = (space_sdk.find_forms(kapp['slug']).content['forms'] || {}).map{ |form| form['slug']}
+    forms.each { |form|
+      properties = File.read(form)
+      form = JSON.parse(properties)
+      sourceForms.push(form['slug'])
+      if destinationForms.include?(form['slug'])
+        space_sdk.update_form(kapp['slug'] ,form['slug'], form)
+      else   
+        space_sdk.add_form(kapp['slug'], form)
+      end
+    }
+    # ------------------------------------------------------------------------------
+    # delete forms
+    # ------------------------------------------------------------------------------
+    destinationForms.each { |slug|
+      if vars["options"]["delete"] && !sourceForms.include?(slug)
+        #Delete form is disabled
+        #space_sdk.delete_form(kapp['slug'], slug)
+      end
+    } 
+  end
+  
   # ------------------------------------------------------------------------------
   # Import Kapp Form Data
   # ------------------------------------------------------------------------------
