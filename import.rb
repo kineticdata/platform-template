@@ -422,33 +422,35 @@ Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each { |fi
 # ------------------------------------------------------------------------------
 # import space teams
 # ------------------------------------------------------------------------------
-SourceTeamArray = []
-destinationTeamsArray = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
-(Dir["#{core_path}/space/teams/*.json"] || []).each{ |team|
-  body = JSON.parse(File.read(team))
-  if !destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']  }.nil?
-    space_sdk.update_team(body['slug'], body)
-  else
-    space_sdk.add_team(body)
-  end
-  #Add Attributes to the Team
-  (body['attributes'] || []).each{ | attribute |
-   space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
+if (teams = Dir["#{core_path}/space/teams/*.json"]).length > 0 
+  SourceTeamArray = []
+  destinationTeamsArray = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
+  teams.each{ |team|
+    body = JSON.parse(File.read(team))
+    if !destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']  }.nil?
+      space_sdk.update_team(body['slug'], body)
+    else
+      space_sdk.add_team(body)
+    end
+    #Add Attributes to the Team
+    (body['attributes'] || []).each{ | attribute |
+     space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
+    }
+    SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
   }
-  SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
-}
 
-# ------------------------------------------------------------------------------
-# delete space teams
-# TODO: A method doesn't exist for deleting the team
-# ------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
+  # delete space teams
+  # TODO: A method doesn't exist for deleting the team
+  # ------------------------------------------------------------------------------
 
-destinationTeamsArray.each do |team|
-  #if !SourceTeamArray.include?(team)
-  if SourceTeamArray.find {|source_team| source_team['slug'] == team['slug']  }.nil?
-    #Delete has been disabled.  It is potentially too dangerous to include w/o advanced knowledge.
-    #space_sdk.delete_team(team['slug'])
-  end
+  destinationTeamsArray.each { |team|
+    #if !SourceTeamArray.include?(team)
+    if SourceTeamArray.find {|source_team| source_team['slug'] == team['slug']  }.nil?
+      #Delete has been disabled.  It is potentially too dangerous to include w/o advanced knowledge.
+      #space_sdk.delete_team(team['slug'])
+    end
+  }
 end
 
 # ------------------------------------------------------------------------------
