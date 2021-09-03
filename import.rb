@@ -736,7 +736,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
         "values" => submission["values"],
         "coreState" => submission["coreState"]
       }
-      space_sdk.add_submission(yml['slug'], form_slug, body).content
+      space_sdk.add_submission(kapp['slug'], form_slug, body).content
     }
   }
   # ------------------------------------------------------------------------------
