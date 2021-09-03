@@ -482,7 +482,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceKappAttributeArray = []
     destinationKappAttributeArray = (space_sdk.find_kapp_attribute_definitions(kapp['slug']).content['kappAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     kappAttributeDefinitions = JSON.parse(File.read(file))
-    kappAttributeDefinitions.each { |attribute|
+    (kappAttributeDefinitions || []).each { |attribute|
         if destinationKappAttributeArray.include?(attribute['name'])
           space_sdk.update_kapp_attribute_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -507,7 +507,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceKappCategoryArray = []
     destinationKappAttributeArray = (space_sdk.find_category_attribute_definitions(kapp['slug']).content['categoryAttributeDefinitions'] || {}).map { |definition|  definition['name']}  
     kappCategoryDefinitions = JSON.parse(File.read(file))
-    kappCategoryDefinitions.each { |attribute|
+    (kappCategoryDefinitions || []).each { |attribute|
         if destinationKappAttributeArray.include?(attribute['name'])
           space_sdk.update_category_attribute_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -532,7 +532,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceFormAttributeArray = []
     destinationFormAttributeArray = (space_sdk.find_form_attribute_definitions(kapp['slug']).content['formAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     formAttributeDefinitions = JSON.parse(File.read(file))
-    formAttributeDefinitions.each { |attribute|
+    (formAttributeDefinitions || []).each { |attribute|
         if destinationFormAttributeArray.include?(attribute['name'])
           space_sdk.update_form_attribute_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -557,7 +557,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceFormTypesArray = []
     destinationFormTypesArray = (space_sdk.find_formtypes(kapp['slug']).content['formTypes'] || {}).map { |formTypes|  formTypes['name']}
     formTypes = JSON.parse(File.read(file))
-    formTypes.each { |body|
+    (formTypes || []).each { |body|
       if destinationFormTypesArray.include?(body['name'])
         space_sdk.update_formtype(kapp['slug'], body['name'], body)
       else
@@ -582,7 +582,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceSecurtyPolicyArray = []
     destinationSecurtyPolicyArray = (space_sdk.find_security_policy_definitions(kapp['slug']).content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
     securityPolicyDefinitions = JSON.parse(File.read(file))
-    securityPolicyDefinitions.each { |attribute|
+    (securityPolicyDefinitions || []).each { |attribute|
         if destinationSecurtyPolicyArray.include?(attribute['name'])
           space_sdk.update_security_policy_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -605,7 +605,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceCategoryArray = []
     destinationCategoryArray = (space_sdk.find_categories(kapp['slug']).content['categories'] || {}).map { |definition|  definition['slug']}
     categories = JSON.parse(File.read(file))
-    categories.each { |attribute|
+    (categories || []).each { |attribute|
       if destinationCategoryArray.include?(attribute['slug'])
         space_sdk.update_category_on_kapp(kapp['slug'], attribute['slug'], attribute)
       else
@@ -736,7 +736,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
         "values" => submission["values"],
         "coreState" => submission["coreState"]
       }
-      space_sdk.add_submission(kapp['slug'], form_slug, body).content
+      space_sdk.add_submission(yml['slug'], form_slug, body).content
     }
   }
   # ------------------------------------------------------------------------------
