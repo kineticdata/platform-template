@@ -422,33 +422,35 @@ Dir["#{core_path}/space/datastore/forms/**/submissions*.ndjson"].sort.each { |fi
 # ------------------------------------------------------------------------------
 # import space teams
 # ------------------------------------------------------------------------------
-SourceTeamArray = []
-destinationTeamsArray = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
-Dir["#{core_path}/space/teams/*.json"].each{ |team|
-  body = JSON.parse(File.read(team))
-  if !destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']  }.nil?
-    space_sdk.update_team(body['slug'], body)
-  else
-    space_sdk.add_team(body)
-  end
-  #Add Attributes to the Team
-  body['attributes'].each{ | attribute |
-   space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
+if (teams = Dir["#{core_path}/space/teams/*.json"]).length > 0 
+  SourceTeamArray = []
+  destinationTeamsArray = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
+  teams.each{ |team|
+    body = JSON.parse(File.read(team))
+    if !destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']  }.nil?
+      space_sdk.update_team(body['slug'], body)
+    else
+      space_sdk.add_team(body)
+    end
+    #Add Attributes to the Team
+    (body['attributes'] || []).each{ | attribute |
+     space_sdk.add_team_attribute(body['name'], attribute['name'], attribute['values'])
+    }
+    SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
   }
-  SourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
-}
 
-# ------------------------------------------------------------------------------
-# delete space teams
-# TODO: A method doesn't exist for deleting the team
-# ------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
+  # delete space teams
+  # TODO: A method doesn't exist for deleting the team
+  # ------------------------------------------------------------------------------
 
-destinationTeamsArray.each do |team|
-  #if !SourceTeamArray.include?(team)
-  if SourceTeamArray.find {|source_team| source_team['slug'] == team['slug']  }.nil?
-    #Delete has been disabled.  It is potentially too dangerous to include w/o advanced knowledge.
-    #space_sdk.delete_team(team['slug'])
-  end
+  destinationTeamsArray.each { |team|
+    #if !SourceTeamArray.include?(team)
+    if SourceTeamArray.find {|source_team| source_team['slug'] == team['slug']  }.nil?
+      #Delete has been disabled.  It is potentially too dangerous to include w/o advanced knowledge.
+      #space_sdk.delete_team(team['slug'])
+    end
+  }
 end
 
 # ------------------------------------------------------------------------------
@@ -480,7 +482,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceKappAttributeArray = []
     destinationKappAttributeArray = (space_sdk.find_kapp_attribute_definitions(kapp['slug']).content['kappAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     kappAttributeDefinitions = JSON.parse(File.read(file))
-    kappAttributeDefinitions.each { |attribute|
+    (kappAttributeDefinitions || []).each { |attribute|
         if destinationKappAttributeArray.include?(attribute['name'])
           space_sdk.update_kapp_attribute_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -505,7 +507,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceKappCategoryArray = []
     destinationKappAttributeArray = (space_sdk.find_category_attribute_definitions(kapp['slug']).content['categoryAttributeDefinitions'] || {}).map { |definition|  definition['name']}  
     kappCategoryDefinitions = JSON.parse(File.read(file))
-    kappCategoryDefinitions.each { |attribute|
+    (kappCategoryDefinitions || []).each { |attribute|
         if destinationKappAttributeArray.include?(attribute['name'])
           space_sdk.update_category_attribute_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -530,7 +532,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceFormAttributeArray = []
     destinationFormAttributeArray = (space_sdk.find_form_attribute_definitions(kapp['slug']).content['formAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     formAttributeDefinitions = JSON.parse(File.read(file))
-    formAttributeDefinitions.each { |attribute|
+    (formAttributeDefinitions || []).each { |attribute|
         if destinationFormAttributeArray.include?(attribute['name'])
           space_sdk.update_form_attribute_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -555,7 +557,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceFormTypesArray = []
     destinationFormTypesArray = (space_sdk.find_formtypes(kapp['slug']).content['formTypes'] || {}).map { |formTypes|  formTypes['name']}
     formTypes = JSON.parse(File.read(file))
-    formTypes.each { |body|
+    (formTypes || []).each { |body|
       if destinationFormTypesArray.include?(body['name'])
         space_sdk.update_formtype(kapp['slug'], body['name'], body)
       else
@@ -580,7 +582,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceSecurtyPolicyArray = []
     destinationSecurtyPolicyArray = (space_sdk.find_security_policy_definitions(kapp['slug']).content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
     securityPolicyDefinitions = JSON.parse(File.read(file))
-    securityPolicyDefinitions.each { |attribute|
+    (securityPolicyDefinitions || []).each { |attribute|
         if destinationSecurtyPolicyArray.include?(attribute['name'])
           space_sdk.update_security_policy_definition(kapp['slug'], attribute['name'], attribute)
         else
@@ -603,7 +605,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     sourceCategoryArray = []
     destinationCategoryArray = (space_sdk.find_categories(kapp['slug']).content['categories'] || {}).map { |definition|  definition['slug']}
     categories = JSON.parse(File.read(file))
-    categories.each { |attribute|
+    (categories || []).each { |attribute|
       if destinationCategoryArray.include?(attribute['slug'])
         space_sdk.update_category_on_kapp(kapp['slug'], attribute['slug'], attribute)
       else
@@ -681,28 +683,31 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
   # ------------------------------------------------------------------------------
   # Add Kapp Forms
   # ------------------------------------------------------------------------------
-  sourceForms = [] #From import data
-  destinationForms = (space_sdk.find_forms(kapp['slug']).content['forms'] || {}).map{ |form| form['slug']}
-  Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"].each { |form|
-    properties = File.read(form)
-    form = JSON.parse(properties)
-    sourceForms.push(form['slug'])
-    if destinationForms.include?(form['slug'])
-      space_sdk.update_form(kapp['slug'] ,form['slug'], properties)
-    else
-      space_sdk.add_form(kapp['slug'], properties)
-    end
-  }
-  # ------------------------------------------------------------------------------
-  # delete forms
-  # ------------------------------------------------------------------------------
-  destinationForms.each { |slug|
-    if vars["options"]["delete"] && !sourceForms.include?(slug)
-      #Delete form is disabled
-      #space_sdk.delete_form(kapp['slug'], slug)
-    end
-  } 
-
+  
+  if (forms = Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"]).length > 0 
+    sourceForms = [] #From import data
+    destinationForms = (space_sdk.find_forms(kapp['slug']).content['forms'] || {}).map{ |form| form['slug']}
+    forms.each { |form|
+      properties = File.read(form)
+      form = JSON.parse(properties)
+      sourceForms.push(form['slug'])
+      if destinationForms.include?(form['slug'])
+        space_sdk.update_form(kapp['slug'] ,form['slug'], form)
+      else   
+        space_sdk.add_form(kapp['slug'], form)
+      end
+    }
+    # ------------------------------------------------------------------------------
+    # delete forms
+    # ------------------------------------------------------------------------------
+    destinationForms.each { |slug|
+      if vars["options"]["delete"] && !sourceForms.include?(slug)
+        #Delete form is disabled
+        #space_sdk.delete_form(kapp['slug'], slug)
+      end
+    } 
+  end
+  
   # ------------------------------------------------------------------------------
   # Import Kapp Form Data
   # ------------------------------------------------------------------------------
