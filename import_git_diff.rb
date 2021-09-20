@@ -168,7 +168,7 @@ file_path = "core/space/spaceAttributeDefinitions.json"
 
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
   sourceSpaceAttributeArray = []
-  destinationSpaceAttributeArray = JSON.parse(space_sdk.find_space_attribute_definitions().content_string)['spaceAttributeDefinitions'].map { |definition|  definition['name']}
+  destinationSpaceAttributeArray = (space_sdk.find_space_attribute_definitions().content['spaceAttributeDefinitions']|| {}).map { |definition|  definition['name']}
 
   spaceAttributeDefinitions = JSON.parse(file_diff.blob().contents)
   spaceAttributeDefinitions.each { | body |
@@ -192,7 +192,7 @@ end
 file_path = "core/space/userAttributeDefinitions.json"
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
   sourceUserAttributeArray = []
-  destinationUserAttributeArray = JSON.parse(space_sdk.find_user_attribute_definitions().content_string)['userAttributeDefinitions'].map { |definition|  definition['name']}
+  destinationUserAttributeArray = (space_sdk.find_user_attribute_definitions().content['userAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
   if File.file?(file = "#{platform_template_path}/#{file_path}")
     userAttributeDefinitions = JSON.parse(file_diff.blob().contents)
@@ -219,7 +219,7 @@ end
 file_path = "core/space/userProfileAttributeDefinitions.json"
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
   sourceUserProfileAttributeArray = []
-  destinationUserProfileAttributeArray = JSON.parse(space_sdk.find_user_profile_attribute_definitions().content_string)['userProfileAttributeDefinitions'].map { |definition|  definition['name']}
+  destinationUserProfileAttributeArray = (space_sdk.find_user_profile_attribute_definitions().content['userProfileAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
   if File.file?(file = "#{platform_template_path}/#{file_path}")
     userProfileAttributeDefinitions = JSON.parse(file_diff.blob().contents)
@@ -247,7 +247,7 @@ end
 file_path = "core/space/teamAttributeDefinitions.json"
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
   sourceTeamAttributeArray = []
-  destinationTeamAttributeArray = JSON.parse(space_sdk.find_team_attribute_definitions().content_string)['teamAttributeDefinitions'].map { |definition|  definition['name']}
+  destinationTeamAttributeArray = (space_sdk.find_team_attribute_definitions().content['teamAttributeDefinitions']|| {}).map { |definition|  definition['name']}
 
   if File.file?(file = "#{platform_template_path}/#{file_path}")
     teamAttributeDefinitions = JSON.parse(file_diff.blob().contents)
@@ -273,7 +273,7 @@ end
 file_path = "core/space/datastoreFormAttributeDefinitions.json"
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
   sourceDatastoreAttributeArray = []
-  destinationDatastoreAttributeArray = JSON.parse(space_sdk.find_datastore_form_attribute_definitions().content_string)['datastoreFormAttributeDefinitions'].map { |definition|  definition['name']}
+  destinationDatastoreAttributeArray =(space_sdk.find_datastore_form_attribute_definitions().content['datastoreFormAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
   if File.file?(file = "#{platform_template_path}/#{file_path}")
     datastoreFormAttributeDefinitions = JSON.parse(file_diff.blob().contents)
@@ -300,7 +300,7 @@ end
 file_path = "core/space/securityPolicyDefinitions.json"
 if file_diff = g.diff(commit_1, commit_2).path(file_path).first
   sourceSecurityPolicyArray = []
-  destinationSecurityPolicyArray = JSON.parse(space_sdk.find_space_security_policy_definitions().content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
+  destinationSecurityPolicyArray = (space_sdk.find_space_security_policy_definitions().content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
   if File.file?(file = "#{platform_template_path}/#{file_path}")
     securityPolicyDefinitions = JSON.parse(file_diff.blob().contents)
     securityPolicyDefinitions.each { | body |
@@ -327,7 +327,7 @@ end
   logger.info "Importing Bridge Models for #{vars["core"]["space_slug"]}"
 
   destinationModels = space_sdk.find_bridge_models()
-  destinationModels_Array = JSON.parse(destinationModels.content_string)['models'].map{ |model| model['activeMappingName']}
+destinationModels_Array = (destinationModels.content['models'] || {}).map{ |model| model['activeMappingName']}
   file_path = "core/space/models"
   g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
     type = file_diff.type
@@ -353,22 +353,22 @@ end
 
   logger.info "Importing Web APIs for #{vars["core"]["space_slug"]}"
 
-  destinationWebAPIs = space_sdk.find_space_webapis()
-  destinationWebAPIs = JSON.parse(destinationWebAPIs.content_string)['webApis'].map { |definition|  definition['slug']}
+  destinationSpaceWebApisArray = (space_sdk.find_space_webapis().content['webApis'] || {}).map { |definition|  definition['slug']}
+
   file_path = "core/space/webApis/*"
   g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   type = file_diff.type
   body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
   file_name = file_diff.path.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
   if type=="modified"
-    if destinationWebAPIs.include?(body['slug'])
+    if destinationSpaceWebApisArray.include?(body['slug'])
       space_sdk.update_space_webapi(body['slug'], body)
-    elsif destinationWebAPIs.include?(file_name)
+    elsif destinationSpaceWebApisArray.include?(file_name)
       space_sdk.update_space_webapi(file_name, body)
     end
   elsif type=="new"
     space_sdk.add_space_webapi(body)
-  elsif type=="deleted" && vars["options"]["delete"] && destinationWebAPIs.include?(file_name )
+  elsif type=="deleted" && vars["options"]["delete"] && destinationSpaceWebApisArray.include?(file_name )
     space_sdk.delete_space_webapi(file_name)
   end
 }
@@ -378,8 +378,8 @@ end
 # ------------------------------------------------------------------------------
 logger.info "Importing datastore forms for #{vars["core"]["space_slug"]}"
 
-sourceDatastoreForms = [] #From import data
-destinationDatastoreForms = JSON.parse(space_sdk.find_datastore_forms().content_string)['forms'].map{ |forms| forms['slug']}
+destinationDatastoreForms = (space_sdk.find_datastore_forms().content['forms'] || {}).map{ |datastore| datastore['slug']}
+
 file_path = "core/space/datastore/forms/\*.json"
 
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
@@ -443,7 +443,7 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
 logger.info "Importing Teams for #{vars["core"]["space_slug"]}"
 SourceTeamArray = []
 file_path = "core/space/teams/*.json"
-destinationTeams = JSON.parse(space_sdk.find_teams().content_string)['teams'].map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
+destinationTeams = (space_sdk.find_teams().content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name']} }
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   type = file_diff.type
   body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
@@ -477,7 +477,7 @@ logger.info "Importing Webhooks for #{vars["core"]["space_slug"]}"
 
 file_path = "core/space/webhooks/*.json"
 sourceSpaceWebhooksArray = []
-destinationSpaceWebhooksArray = JSON.parse(space_sdk.find_webhooks_on_space().content_string)['webhooks'].map{ |webhook| webhook['name']}
+destinationSpaceWebhooksArray = (space_sdk.find_webhooks_on_space().content['webhooks'] || {}).map{ |webhook| webhook['name']}
 
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   type = file_diff.type
@@ -501,7 +501,8 @@ g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
 # import kapp data
 # ------------------------------------------------------------------------------
 
-Dir["#{core_path}/space/kapps/*.json"].each { |file|
+#Dir["#{core_path}/space/kapps/*.json"].each { |file|
+Dir["#{core_path}/space/kapps/*"].each { |file|   
   kapp_slug = file.split('/').last.gsub('.json', '') # extract the kapp slug from the file path
 
   # if the <kapp_slug>.json is in the diff the kapp was updated
@@ -525,7 +526,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/kappAttributeDefinitions.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceKappAttributeArray = []
-    destinationKappAttributeArray = JSON.parse(space_sdk.find_kapp_attribute_definitions(kapp_slug).content_string)['kappAttributeDefinitions'].map { |definition|  definition['name']}
+    destinationKappAttributeArray = (space_sdk.find_kapp_attribute_definitions(kapp_slug).content['kappAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     kappAttributeDefinitions = JSON.parse(file_diff.blob().contents)
     kappAttributeDefinitions.each { |body|
         if destinationKappAttributeArray.include?(body['name'])
@@ -549,7 +550,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/categoryAttributeDefinitions.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceKappCategoryArray = []
-    destinationKappAttributeArray = JSON.parse(space_sdk.find_category_attribute_definitions(kapp_slug).content_string)['categoryAttributeDefinitions'].map { |definition|  definition['name']}
+    destinationKappAttributeArray = (space_sdk.find_category_attribute_definitions(kapp_slug).content['categoryAttributeDefinitions'] || {}).map { |definition|  definition['name']}
       kappCategoryDefinitions = JSON.parse(file_diff.blob().contents)
 
       kappCategoryDefinitions.each { | body |
@@ -574,7 +575,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/formTypes.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceFormTypesArray = []
-    destinationFormTypesArray = JSON.parse(space_sdk.find_formtypes(kapp_slug).content_string)['formTypes'].map { |formType|  formType['name']}
+    destinationFormTypesArray = (space_sdk.find_formtypes(kapp_slug).content['formTypes'] || {}).map { |formType|  formType['name']}
     kappFormTypes = JSON.parse(file_diff.blob().contents)
     kappFormTypes.each { | body |
         if destinationFormTypesArray.include?(body['name'])
@@ -597,7 +598,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/formAttributeDefinitions.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceFormAttributeArray = []
-    destinationFormAttributeArray = JSON.parse(space_sdk.find_form_attribute_definitions(kapp_slug).content_string)['formAttributeDefinitions'].map { |definition|  definition['name']}
+    destinationFormAttributeArray =(space_sdk.find_form_attribute_definitions(kapp_slug).content['formAttributeDefinitions'] || {}).map { |definition|  definition['name']}
     formAttributeDefinitions = JSON.parse(file_diff.blob().contents)
 
     formAttributeDefinitions.each { | body |
@@ -623,7 +624,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/securityPolicyDefinitions.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceSecurtyPolicyArray = []
-    destinationSecurtyPolicyArray = JSON.parse(space_sdk.find_security_policy_definitions(kapp_slug).content_string)['securityPolicyDefinitions'].map { |definition|  definition['name']}
+    destinationSecurtyPolicyArray = (space_sdk.find_security_policy_definitions(kapp_slug).content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
     securityPolicyDefinitions = JSON.parse(file_diff.blob().contents)
 
     securityPolicyDefinitions.each { | body |
@@ -649,7 +650,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   file_path = "core/space/kapps/#{kapp_slug}/categories.json"
   if file_diff = g.diff(commit_1, commit_2).path(file_path).first
     sourceCategoryArray = []
-    destinationCategoryArray = JSON.parse(space_sdk.find_categories(kapp_slug).content_string)['categories'].map { |definition|  definition['slug']}
+    destinationCategoryArray = (space_sdk.find_categories(kapp_slug).content['categories'] || {}).map { |definition|  definition['slug']}
     categories = JSON.parse(file_diff.blob().contents)
     categories.each { | body |
       if destinationCategoryArray.include?(body['slug'])
@@ -677,7 +678,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
 
   file_path = "core/space/kapps/#{kapp_slug}/webhooks/*.json"
   sourceWebhookArray = []
-  destinationWebhookArray = JSON.parse(space_sdk.find_webhooks_on_kapp(kapp_slug).content_string)['webhooks'].map { |definition|  definition['name']}
+  destinationWebhookArray = (space_sdk.find_webhooks_on_kapp(kapp_slug).content['webhooks'] || {}).map { |definition|  definition['name']}
   g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
     type = file_diff.type
     body = JSON.parse(file_diff.blob().contents) unless file_diff.blob().nil?
@@ -700,7 +701,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   # ------------------------------------------------------------------------------
   logger.info "Importing forms for the #{kapp_slug} Kapp"
 
-  destinationForms = JSON.parse(space_sdk.find_forms(kapp_slug).content_string)['forms'].map{ |form| form['slug']}
+  destinationForms = (space_sdk.find_forms(kapp_slug).content['forms'] || {}).map{ |form| form['slug']}
   file_path = "core/space/kapps/#{kapp_slug}/forms/*.json"
 
   g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
@@ -765,7 +766,7 @@ Dir["#{core_path}/space/kapps/*.json"].each { |file|
   # ------------------------------------------------------------------------------
   logger.info "Importing Web APIs for the #{kapp_slug} Kapp"
 
-  destinationWebAPIs = JSON.parse(space_sdk.find_kapp_webapis(kapp_slug).content_string)['webApis'].map{ |definition|  definition['slug']}
+  destinationWebAPIs = (space_sdk.find_kapp_webapis(kapp_slug).content['webApis'] || {}).map{ |definition|  definition['slug']}
   file_path = "core/space/kapps/#{kapp_slug}/webApis/*"
 
   g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
@@ -846,7 +847,9 @@ g.diff(commit_1, commit_2).path(file_path).each { | file_diff |
 # ------------------------------------------------------------------------------
 # Import Task Trees
 # ------------------------------------------------------------------------------
-Dir["#{task_path}/sources/*.json"].each {|source|
+#Dir["#{task_path}/sources/*.json"].each {|source|
+Dir["#{task_path}/sources/*"].each {|source| 
+
   body = JSON.parse(File.read(source))
   source_file_name = source.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
   source_name = body['name']
@@ -903,7 +906,7 @@ logger.info "Importing Handlers"
 
 file_path ="#{task_path}/handlers/*.zip"
 sourceHandlers = []
-destinationHandlers = JSON.parse(task_sdk.find_handlers().content_string)['handlers'].map{ |handler| handler['definitionId']}
+#destinationHandlers = (task_sdk.find_handlers().content['handlers']|| {}).map{ |handler| handler['definitionId']}
 g.diff(commit_1, commit_2).path(file_path).each{ |file_diff|
   type = file_diff.type
   if type=="modified" || type=="new"
