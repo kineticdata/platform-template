@@ -266,74 +266,63 @@ $form_consoldidation = $space_sdk.get("#{vars["core"]["server_url"]}/app/api/v1/
 if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['space']
   
   # Export Teams
-  if vars['options']['EXPORT']['space']['teams']
-    $logger.info "Exporting \"Teams\" for space"  
-    (vars['options']['EXPORT']['space']['teams'] || []).each{ |team|
+  $logger.info "Exporting \"Teams\" for space"
+  (vars['options']['EXPORT']['space']['teams'] || []).each{ |team|
+    if team['team_name']
+      $logger.info "Exporting  \"#{team} Team\" for space"  
       base_filename = create_valid_filename(team["team_name"])
       export = $space_sdk.find_team(team["team_name"], {"include":"details,attributes,#{"memberships" if team["include_membership"]}"})
       $space_sdk.write_object_to_file("#{$core_path}/space/teams/#{base_filename}.json", export.content["team"]) if export.status == 200
-    }
-  end
+    end
+  }
+
   # Export Space Attributes
   if vars['options']['EXPORT']['space']['attributes']
-    # Export User Attributes
-    if vars['options']['EXPORT']['space']['attributes']['user']  
-      $logger.info "Exporting \"User Attributes\" for space"    
-      attributes_array = []
-      vars['options']['EXPORT']['space']['attributes']['user'].each{ | attribute |
-        export = $space_sdk.find_user_attribute_definition(attribute)
-        attributes_array << export.content["userAttributeDefinition"] if export.status == 200
-      }    
-      
-      $space_sdk.write_object_to_file("#{$core_path}/space/userAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    end
     
     # Export User Attributes
-    if vars['options']['EXPORT']['space']['attributes']['user_profile']  
-      $logger.info "Exporting \"User Profile Attributes\" for space"    
-      attributes_array = []
-      vars['options']['EXPORT']['space']['attributes']['user_profile'].each{ | attribute |
-        export = $space_sdk.find_user_profile_attribute_definition(attribute)
-        attributes_array << export.content["userProfileAttributeDefinitions"] if export.status == 200
-      }    
-      
-      $space_sdk.write_object_to_file("#{$core_path}/space/userProfileAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    end
+    $logger.info "Exporting \"User Attributes\" for space"    
+    attributes_array = []
+    (vars['options']['EXPORT']['space']['attributes']['user'] || []).compact.each{ | attribute |
+      export = $space_sdk.find_user_attribute_definition(attribute)
+      attributes_array << export.content["userAttributeDefinition"] if export.status == 200
+    }    
+    $space_sdk.write_object_to_file("#{$core_path}/space/userAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
+    
+    # Export User Attributes
+    $logger.info "Exporting \"User Profile Attributes\" for space"    
+    attributes_array = []
+    (vars['options']['EXPORT']['space']['attributes']['user_profile'] || []).compact.each{ | attribute |
+      export = $space_sdk.find_user_profile_attribute_definition(attribute)
+      attributes_array << export.content["userProfileAttributeDefinitions"] if export.status == 200
+    }       
+    $space_sdk.write_object_to_file("#{$core_path}/space/userProfileAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
     
     # Export Team Attributes
-    if vars['options']['EXPORT']['space']['attributes']['team']  
-      $logger.info "Exporting \"Team Attributes\" for space"    
-      attributes_array = []
-      vars['options']['EXPORT']['space']['attributes']['team'].each{ | attribute |
-        export = $space_sdk.find_team_attribute_definition(attribute)
-        attributes_array << export.content["teamAttributeDefinition"] if export.status == 200
-      }    
-      
-      $space_sdk.write_object_to_file("#{$core_path}/space/teamAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    end
+    $logger.info "Exporting \"Team Attributes\" for space"    
+    attributes_array = []
+    (vars['options']['EXPORT']['space']['attributes']['team'] || []).compact.each{ | attribute |
+      export = $space_sdk.find_team_attribute_definition(attribute)
+      attributes_array << export.content["teamAttributeDefinition"] if export.status == 200
+    }    
+    $space_sdk.write_object_to_file("#{$core_path}/space/teamAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
     
     # Export Space Attributes
-    if vars['options']['EXPORT']['space']['attributes']['space']  
-      $logger.info "Exporting \"Space Attributes\" for space"    
-      attributes_array = []
-      vars['options']['EXPORT']['space']['attributes']['space'].each{ | attribute |
-        export = $space_sdk.find_space_attribute_definition(attribute)
-        attributes_array << export.content["spaceAttributeDefinition"] if export.status == 200
-      }    
-      
-      $space_sdk.write_object_to_file("#{$core_path}/space/spaceAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    end
+    $logger.info "Exporting \"Space Attributes\" for space"    
+    attributes_array = []
+    (vars['options']['EXPORT']['space']['attributes']['space'] || []).compact.each{ | attribute |
+      export = $space_sdk.find_space_attribute_definition(attribute)
+      attributes_array << export.content["spaceAttributeDefinition"] if export.status == 200
+    }    
+    $space_sdk.write_object_to_file("#{$core_path}/space/spaceAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
     
     # Export Models
-    if vars['options']['EXPORT']['space']['models']  
-      $logger.info "Exporting \"Models\" for space"    
-      vars['options']['EXPORT']['space']['models'].each{ | model |
-        export = $space_sdk.find_bridge_model(model)
-        base_filename = create_valid_filename(model)
-        $space_sdk.write_object_to_file("#{$core_path}/space/models/#{base_filename}.json", export.content["model"]) if export.status == 200
-      }    
+    $logger.info "Exporting \"Models\" for space"    
+    (vars['options']['EXPORT']['space']['models'] || []).compact.each{ | model |
+      export = $space_sdk.find_bridge_model(model)
+      base_filename = create_valid_filename(model)
+      $space_sdk.write_object_to_file("#{$core_path}/space/models/#{base_filename}.json", export.content["model"]) if export.status == 200
+    }    
       
-    end   
   end
 end 
 
@@ -346,7 +335,7 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
 
   # Iterate through the forms in each kapps
   (vars['options']['EXPORT']['kapps'] || []).each{ |kapp|
-    $logger.info "Exporting the #{kapp['kapp_slug']} kapp"
+    $logger.info "Exporting the \"#{kapp['kapp_slug']}\" Kapp"
     kapp_path = "#{kapps_path}/#{kapp['kapp_slug']}"
     forms_path = kapp['kapp_slug'] == "datastore" ? !$form_consoldidation ? "#{$core_path}/space/datastore" : "#{kapp_path}/forms" : "#{kapp_path}/forms" # set dir path
     
@@ -356,40 +345,39 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
         export = $space_sdk.export_form(kapp['kapp_slug'], form['form_slug']) # Export the form
         $space_sdk.write_object_to_file("#{forms_path}/#{form['form_slug']}.json", export.content['form']) if export.status == 200
         # Export Submissions
+$logger.info "######################{form}"
         if form['submissions'] && form['submissions'] == true 
           export_obj = {"kappSlug"=>kapp['kapp_slug'],"formSlug"=>form['form_slug']}
           export_submissions(export_obj) # Export Submissions
         end
       end
     }
-    
-    # Export Kapp Attributes
-    if kapp['attributes'] && kapp['attributes']['kapp_attributes']  
+
+    $logger.info "Exporting \"Attributes\" for the #{kapp['kapp_slug']} kapp"
+    if kapp['attributes']
+      
+      # Export Kapp Attributes
       $logger.info "Exporting \"Kapp Attributes\" for the #{kapp['kapp_slug']} kapp"    
       attributes_array = []
-      kapp['attributes']['kapp_attributes'].each{ | kapp_attribute |
+      (kapp['attributes']['kapp_attributes'] || []).compact.each{ | kapp_attribute |
         export = $space_sdk.find_kapp_attribute_definition(kapp['kapp_slug'], kapp_attribute)
         attributes_array << export.content['kappAttributeDefinition']
       }    
       $space_sdk.write_object_to_file("#{kapp_path}/kappAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    end
-    
-    # Export Category Attributes
-    if kapp['attributes'] && kapp['attributes']['category_attributes']  
+      
+      # Export Category Attributes
       $logger.info "Exporting \"Category Attributes\" for the #{kapp['kapp_slug']} kapp"    
       attributes_array = []
-      kapp['attributes']['category_attributes'].each{ | category_attribute |
+      (kapp['attributes']['category_attributes'] || []).compact.each{ | category_attribute |
         export = $space_sdk.find_category_attribute_definition(kapp['kapp_slug'], category_attribute)
         attributes_array << export.content['categoryAttributeDefinition']
       }    
       $space_sdk.write_object_to_file("#{kapp_path}/categoryAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    end
-    
-    # Export Form Attributes
-    if kapp['attributes'] && kapp['attributes']['form_attributes']  
+      
+      # Export Form Attributes
       $logger.info "Exporting \"Form Attributes\" for the #{kapp['kapp_slug']} kapp"    
       attributes_array = []
-      kapp['attributes']['form_attributes'].each{ | form_attribute |
+      (kapp['attributes']['form_attributes'] || []).compact.each{ | form_attribute |
         export = $space_sdk.find_form_attribute_definition(kapp['kapp_slug'], form_attribute)
         attributes_array << export.content['formAttributeDefinition']
       }    
@@ -397,15 +385,13 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
     end
     
     # Export Kapp Categories
-    if kapp['categories']  
-      $logger.info "Exporting \"Categories\" for the #{kapp['kapp_slug']} kapp"    
-      categories_array = []
-      kapp['categories'].each{ | category_slug |
-        export = $space_sdk.find_category_on_kapp(kapp['kapp_slug'], category_slug, {"include":"attributes"})
-        categories_array << export.content['category']
-      }    
-      $space_sdk.write_object_to_file("#{kapp_path}/categories.json", categories_array) unless categories_array.length == 0
-    end
+    $logger.info "Exporting \"Categories\" for the #{kapp['kapp_slug']} kapp"    
+    categories_array = []
+    (kapp['categories'] || []).compact.each{ | category_slug |
+      export = $space_sdk.find_category_on_kapp(kapp['kapp_slug'], category_slug, {"include":"attributes"})
+      categories_array << export.content['category']
+    }    
+    $space_sdk.write_object_to_file("#{kapp_path}/categories.json", categories_array) unless categories_array.length == 0
   }
 end
 
@@ -425,19 +411,18 @@ task_sdk = KineticSdk::Task.new({
 })
 
 if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['workflow']
-
   # Export Trees
-  (vars['options']['EXPORT']['workflow']['trees'] || []).each{ |tree_name|
+  (vars['options']['EXPORT']['workflow']['trees'] || []).compact.each{ |tree_name|
       tree = task_sdk.export_tree(tree_name)
   }
 
   # Export Routines
-  (vars['options']['EXPORT']['workflow']['routines'] || []).each{ |routine_name|
+  (vars['options']['EXPORT']['workflow']['routines'] || []).compact.each{ |routine_name|
       tree = task_sdk.export_tree(routine_name) if task_sdk.find_tree(routine_name).status == 200
   }  
 
   # Export Handlers
-  (vars['options']['EXPORT']['workflow']['handlers'] || []).each{ |handler_id|
+  (vars['options']['EXPORT']['workflow']['handlers'] || []).compact.each{ |handler_id|
       handler = task_sdk.export_handler(handler_id) if task_sdk.find_handler(handler_id).status == 200
   } 
 end
