@@ -21,6 +21,7 @@ The included Scripts are:
 * Ruby is required on the machine running the scripts
 * [Bundler](https://bundler.io/) 
 * git (optional but recommended) is required if you want to do "diffing" to better help with building migration scripts
+* The user configured to run the import should be a member of the "Task Developer" team. Membership of this team is required for importing some task components.
 
 ## Getting Started
 
