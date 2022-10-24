@@ -216,7 +216,7 @@ logger.info "Exporting and writing submission data"
   FileUtils.mkdir_p(submission_path, :mode => 0700)
 
   # build params to pass to the retrieve_form_submissions method
-  params = {"include" => "values", "limit" => 1000, "direction" => "ASC"}
+  params = {"include" => "details,children,origin,parent,values", "limit" => 1000, "direction" => "ASC"}
 
   # open the submissions file in write mode
   file = File.open("#{submission_path}/submissions.ndjson", 'w');
