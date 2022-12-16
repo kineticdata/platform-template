@@ -309,7 +309,7 @@ destinationSecurityPolicyArray.each { | attribute |
 # ------------------------------------------------------------------------------
 
 destinationModels = space_sdk.find_bridge_models()
-destinationModels_Array = (destinationModels.content['models'] || {}).map{ |model| model['activeMappingName']}
+destinationModels_Array = (destinationModels.content['models'] || {}).map{ |model| model['name']}
 
 Dir["#{core_path}/space/models/*.json"].each{ |model|
   body = JSON.parse(File.read(model))
