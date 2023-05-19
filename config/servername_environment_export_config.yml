@@ -8,11 +8,11 @@ core:
   service_user_password: <PASSWORD>
 options:
   SUBMISSIONS_TO_EXPORT:
-  - datastore: true
-    formSlug: <FORM_SLUG>
-  - datastore: false
-    kappSlug: <KAPP_SLUG>    
-    formSlug: <FORM_SLUG>    
+  - datastore: #{true:false}
+    formSlug: #FORM_SLUG
+  - datastore: #{true:false}
+    kappSlug: #KAPP_SLUG
+    formSlug: #FORM_SLUG 
 
   REMOVE_DATA_PROPERTIES:
   - createdAt
