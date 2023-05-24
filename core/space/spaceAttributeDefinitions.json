@@ -1,0 +1,7 @@
+[
+  {
+    "allowsMultiple": false,
+    "description": "NetSuite \"Event Saved Search For Kinetic\" Search Id. The Internal Id of the Event Saved Search For Kinetic in NetSuite. Used by the Robot to search and sync data.",
+    "name": "NetSuite Calendar Event Saved Search Id"
+  }
+]

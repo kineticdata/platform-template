@@ -1,0 +1,90 @@
+{
+  "activeMappingName": "Calendar Events",
+  "attributes": [
+    {
+      "name": "End Time"
+    },
+    {
+      "name": "Event Id"
+    },
+    {
+      "name": "Location"
+    },
+    {
+      "name": "Room"
+    },
+    {
+      "name": "Start Date"
+    },
+    {
+      "name": "Start Time"
+    },
+    {
+      "name": "Test Schedule"
+    },
+    {
+      "name": "Title"
+    }
+  ],
+  "mappings": [
+    {
+      "agentSlug": "system",
+      "attributes": [
+        {
+          "name": "Event Id",
+          "structureField": "${fields(\"values[Event Id]\")}"
+        },
+        {
+          "name": "Title",
+          "structureField": "${fields(\"values[Title]\")}\t"
+        },
+        {
+          "name": "Start Date",
+          "structureField": "${fields(\"values[Start Date]\")}"
+        },
+        {
+          "name": "End Time",
+          "structureField": "${fields(\"values[End Time]\")}"
+        },
+        {
+          "name": "Start Time",
+          "structureField": "${fields(\"values[Start Time]\")}"
+        },
+        {
+          "name": "Test Schedule",
+          "structureField": "${fields(\"values[Test Schedule]\")}"
+        },
+        {
+          "name": "Room",
+          "structureField": "${fields(\"values[Room]\")}"
+        },
+        {
+          "name": "Location",
+          "structureField": "${fields(\"values[Location]\")}"
+        }
+      ],
+      "bridgeSlug": "kinetic-core",
+      "name": "Calendar Events",
+      "qualifications": [
+        {
+          "name": "By Test Schedule Id",
+          "query": "kappSlug=calendar&formSlug=calendar-events&limit=1000&index=values[Test Schedule ID]&q=values[Test Schedule ID]=\"${parameters(\"Test Schedule\")}\""
+        }
+      ],
+      "structure": "Submissions"
+    }
+  ],
+  "name": "Calendar Events",
+  "qualifications": [
+    {
+      "name": "By Test Schedule Id",
+      "parameters": [
+        {
+          "name": "Test Schedule"
+        }
+      ],
+      "resultType": "Multiple"
+    }
+  ],
+  "status": "Active"
+}

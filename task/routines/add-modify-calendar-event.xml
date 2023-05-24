@@ -1,0 +1,215 @@
+<tree schema_version="1.0">
+    <sourceName>-</sourceName>
+    <sourceGroup>-</sourceGroup>
+    <definitionId>routine_add_modify_calendar_event</definitionId>
+    <type>Global Routine</type>
+    <status>Active</status>
+    <taskTree builder_version="" schema_version="1.0" version="">
+        <name>Add Modify Calendar Event</name>
+        <author></author>
+        <notes></notes>
+        <lastID>14</lastID>
+        <taskDefinition id="routine_add_modify_calendar_event" name="Add Modify Calendar Event" schema_version="1.0" version="1">
+            <visible>false</visible>
+            <deferrable>true</deferrable>
+            <parameters>
+                <parameter id="Input JSON" label="Input JSON" required="true" tooltip=""></parameter>
+            </parameters>
+            <handler name="system_tree_call" version="1"></handler>
+            <results format="xml"></results>
+        </taskDefinition>
+        <request>
+            <task definition_id="system_start_v1" id="start" name="Start" x="10" y="10">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_1</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_1" name="Get Calendar Event" x="168" y="130">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to find submissions in.">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="false" tooltip="The slug of the Form to find submissions in. If none provided, can only use Kapp Fields in search query">calendar-events</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Type" label="Form Type" menu="" required="false" tooltip="The Type of Form to find submissions in."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Core State" label="Core State" menu="" required="false" tooltip="Searches for submissions that have a core state that matches this parameter. If no value is provided, the results will contain submissions in all core states."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Limit" label="Limit" menu="" required="false" tooltip="Limit the number of results returned. If not provided, the server will limit the results to 25 submissions. Maximum limit 1000"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Query" label="Query" menu="" required="false" tooltip="Query to use to fetch submissions. (i.e values[First Name]=&quot;Fred&quot;)">values[Event Id]="&lt;%=JSON.parse(@inputs['Input JSON'])['internal_id']%&gt;"</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Timeline" label="Timeline" menu="" required="false" tooltip="Date property to search by. The default value is createdAt."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Direction" label="Direction" menu="" required="false" tooltip="Result Set sorting direction. The default value is descending."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Start Date/Time" label="Start Date/Time" menu="" required="false" tooltip="Start date/time of the timeline. This value should be used to both refine and limit the search results. Format should be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="End Date/Time" label="End Date/Time" menu="" required="false" tooltip="End date/time of the timeline. This value should be used to both refine and limit the search results. Formatshould be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Next Page Token" label="Next Page Token" menu="" required="false" tooltip="The value to use as the offset for the page of submissions to return. The submission that matches this value will not be included in the results."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_5</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submission_update_v1" id="routine_kinetic_submission_update_v1_2" name="Update Calendar Event" x="164.29411" y="550.1177">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Id" label="Id" menu="" required="true" tooltip="The id of the submission to update">&lt;%= JSON.parse(@results['Get Calendar Event']['Submissions List JSON'])[0]['id'] %&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Core State" label="Updated - Core State" menu="" required="false" tooltip="The submissions core state"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Current Page Name" label="Updated - Current Page Name" menu="" required="false" tooltip="The page to set the submission to"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Current Page Navigation" label="Updated - Current Page Navigation" menu="" required="false" tooltip="The direction of the next page (next or previous)"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Origin Id" label="Updated - Origin Id" menu="" required="false" tooltip="The Id of the submissions origin"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Parent Id" label="Updated - Parent Id" menu="" required="false" tooltip="The Id of the submissions parent"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Values JSON" label="Updated - Values JSON" menu="" required="false" tooltip="A JSON representation of the submissions values">&lt;%= @results['Generate Calendar Event Values']['output'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_join_v1_6</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submission_create_v1" id="routine_kinetic_submission_create_v1_3" name="Create Calendar Event" x="389.82352" y="520.58826">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to create the submission in">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="true" tooltip="The slug of the Form to create the submission in">calendar-events</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Current Page Name" label="Current Page Name" menu="" required="false" tooltip="The page to set the submission to"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Current Page Navigation" label="Current Page Navigation" menu="" required="false" tooltip="The direction of the next page (next or previous)"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Values JSON" label="Values JSON" menu="" required="false" tooltip="A JSON Map of values to set into the submissions fields">&lt;%= @results['Generate Calendar Event Values']['output'] %&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Origin Id" label="Origin Id" menu="" required="false" tooltip="Sets the submissions origin to another Kinetic Submission"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Parent Id" label="Parent Id" menu="" required="false" tooltip="Sets the submissions parent to another Kinetic Submission"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Submit Submission" label="Submit Submission" menu="" required="false" tooltip="True or False, if Submission should be Submitted when created"></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_join_v1_6</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_5" name="Generate Calendar Event Values" x="166.20433" y="242.32198">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+values = JSON.parse(@inputs['Input JSON'])
+
+required_keys = ["title","startdate","starttime","endtime","testschedule_id","custevent_room_selected","custevent_location","internal_id" ]
+required_values = required_keys.all? {|s| (values.key? s)}
+
+if required_values 
+  {
+    "Event Id"=&gt;values['internal_id'],
+    "Title"=&gt;values['title'],
+    "Start Date"=&gt;Date.strptime(values['startdate'], '%m/%d/%Y').strftime("%Y-%m-%d"), #"startdate":"05/01/2023"
+    "Start Time"=&gt;Time.parse(values['starttime']).strftime('%R'), #"Start Time": "13:30"
+    "End Time"=&gt;Time.parse(values['endtime']).strftime('%R'), #"End Time": "15:30"
+    "Test Schedule ID" =&gt;values['testschedule_id'],
+    "Room"=&gt;values['custevent_room_selected'],
+    "Location"=&gt;values['custevent_location']
+  }.to_json
+else
+  {"error"=&gt;"A required value is missing from the Calenedar Event data. The record could not be created."}.to_json
+end
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Error" type="Complete" value="JSON.parse(@results['Generate Calendar Event Values']['output']).has_key?(&quot;error&quot;)">routine_handler_failure_error_process_v1_8</task>
+                    <task label="No Error" type="Complete" value="!JSON.parse(@results['Generate Calendar Event Values']['output']).has_key?(&quot;error&quot;)">system_noop_v1_9</task>
+                </dependents>
+            </task>
+            <task definition_id="system_join_v1" id="system_join_v1_6" name="Add Modify Join" x="166.29411" y="716.1177">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="type" label="Type:" menu="All,Any,Some" required="true" tooltip="How many dependents must be completed before continuing?">Any</parameter>
+                    <parameter dependsOnId="type" dependsOnValue="Some" id="number" label="Number:" menu="" required="false" tooltip="If some, how many?"></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_tree_return_v1_7</task>
+                </dependents>
+            </task>
+            <task definition_id="system_tree_return_v1" id="system_tree_return_v1_7" name="Tree Return" x="163.29411" y="804.1177">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents></dependents>
+            </task>
+            <task definition_id="routine_handler_failure_error_process_v1" id="routine_handler_failure_error_process_v1_8" name="Error Process" x="449.82352" y="242.58823">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Error Message" label="Error Message" menu="" required="false" tooltip="Error Message ">&lt;%= @results['Generate Calendar Event Values']['output'] %&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Handler Name" label="Handler Name" menu="" required="false" tooltip="">Generate Calendar Event Values</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Run Id" label="Run Id" menu="" required="false" tooltip="">&lt;%=@run['Id']%&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Inputs JSON" label="Inputs JSON" menu="" required="false" tooltip="">&lt;%=@inputs.to_json%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_add_modify_calendar_event_11</task>
+                </dependents>
+            </task>
+            <task definition_id="system_noop_v1" id="system_noop_v1_9" name="No Error" x="164.82352" y="380.58823">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Update" type="Complete" value="@results['Get Calendar Event']['Count'].to_i &gt; 0">routine_kinetic_submission_update_v1_2</task>
+                    <task label="Create" type="Complete" value="@results['Get Calendar Event']['Count'].to_i == 0">routine_kinetic_submission_create_v1_3</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_add_modify_calendar_event" id="routine_add_modify_calendar_event_11" name="Retry" x="705.82355" y="240.58823">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Input JSON" label="Input JSON" menu="" required="true" tooltip="">&lt;%= @results['Error Process']['Input JSON'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_tree_return_v1_12</task>
+                </dependents>
+            </task>
+            <task definition_id="system_tree_return_v1" id="system_tree_return_v1_12" name="Return From Error" x="929.82355" y="240.58823">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents></dependents>
+            </task>
+        </request>
+    </taskTree>
+</tree>
