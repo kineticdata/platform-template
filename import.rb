@@ -82,8 +82,7 @@ raise OptionParser::MissingArgument if options["CONFIG_FILE"].nil?
 
 # determine the directory paths
 platform_template_path = File.dirname(File.expand_path(__FILE__))
-core_path = File.join(platform_template_path, "core")
-task_path = File.join(platform_template_path, "task")
+
 
 # ------------------------------------------------------------------------------
 # methods
@@ -116,6 +115,10 @@ if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
 elsif
   raise "Config file not found: #{file}"
 end
+
+#Setting core paths
+core_path = File.join(platform_template_path, "exports", vars['core']['old_space_slug'], "core")
+task_path = File.join(platform_template_path, "exports", vars['core']['old_space_slug'], "task")
 
 # Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|

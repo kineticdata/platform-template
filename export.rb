@@ -83,8 +83,7 @@ end.parse!
 
 # determine the directory paths
 platform_template_path = File.dirname(File.expand_path(__FILE__))
-core_path = File.join(platform_template_path, "core")
-task_path = File.join(platform_template_path, "task")
+
 
 # ------------------------------------------------------------------------------
 # methods
@@ -135,8 +134,9 @@ REMOVE_DATA_PROPERTIES = vars["options"]["REMOVE_DATA_PROPERTIES"]
 # core
 # ------------------------------------------------------------------------------
 
-logger.info "Removing files and folders from the existing \"#{template_name}\" template."
-FileUtils.rm_rf Dir.glob("#{core_path}/*")
+#Setting core paths
+core_path = File.join(platform_template_path, "exports", vars['core']['space_slug'], "core")
+task_path = File.join(platform_template_path, "exports", vars['core']['space_slug'], "task")
 
 logger.info "Setting up the Core SDK"
  
@@ -147,6 +147,11 @@ space_sdk = KineticSdk::Core.new({
   password: vars["core"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{core_path}" })
 })
+
+
+
+logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+FileUtils.rm_rf Dir.glob("#{core_path}/*")
 
 # fetch export from core service and write to export directory
 logger.info "Exporting the core components for the \"#{template_name}\" template."
@@ -266,8 +271,7 @@ logger.info "  - submission data export complete"
 # ------------------------------------------------------------------------------
 # task
 # ------------------------------------------------------------------------------
-logger.info "Removing files and folders from the existing \"#{template_name}\" template."
-FileUtils.rm_rf Dir.glob("#{task_path}/*")
+
 
 task_sdk = KineticSdk::Task.new({
   app_server_url: "#{vars["task"]["server_url"]}",
@@ -275,6 +279,10 @@ task_sdk = KineticSdk::Task.new({
   password: vars["task"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{task_path}" })
 })
+
+
+logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+FileUtils.rm_rf Dir.glob("#{task_path}/*")
 
 logger.info "Exporting the task components for the \"#{template_name}\" template."
 logger.info "  exporting with api: #{task_sdk.api_url}"
