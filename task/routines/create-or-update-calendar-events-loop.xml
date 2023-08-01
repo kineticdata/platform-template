@@ -8,7 +8,7 @@
         <name>Create or Update Calendar Events Loop</name>
         <author></author>
         <notes></notes>
-        <lastID>19</lastID>
+        <lastID>22</lastID>
         <taskDefinition id="routine_create_or_update_calendar_events_loop" name="Create or Update Calendar Events Loop" schema_version="1.0" version="1">
             <visible>false</visible>
             <deferrable>true</deferrable>
@@ -63,7 +63,7 @@
                     <task label="" type="Complete" value="">system_tree_return_v1_10</task>
                 </dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_3" name="Flatten Calendar Event Values" x="274" y="212">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_3" name="Flatten Calendar Event Values" x="276" y="212">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -92,7 +92,12 @@
 
   # Convert Start Date
     est_start_date = est_start_date_time.strftime('%m/%d/%Y') # Get new date value
-  
+
+  # Convert End Date
+    custevent_acs_room_booked= event['custom_search_join'].select{|v| v["customization_ref"]["@script_id"] == "custevent_acs_room_booked"}
+    end_date = (!custevent_acs_room_booked.empty? ? custevent_acs_room_booked[0]['search_row_basic']['custom_field_list']['custom_field']['search_value'] : nil)
+    est_end_date = Date.strptime(end_date, '%Y-%m-%d').strftime('%m/%d/%Y')
+      
   # Get Location
     custevent_room_selected = event['custom_search_join'].select{|v| v["customization_ref"]["@script_id"] == "custevent_room_selected"}
     room = (!custevent_room_selected.empty? ? custevent_room_selected[0]['search_row_basic']['name']['search_value'] : nil)
@@ -101,17 +106,23 @@
   # Get Test Schedule
     custevent_acs_room_booked= event['custom_search_join'].select{|v| v["customization_ref"]["@script_id"] == "custevent_acs_room_booked"}
     schedule_id = (!custevent_acs_room_booked.empty? ? custevent_acs_room_booked[0]['search_row_basic']['internal_id']['search_value']['@internal_id'] : nil)
-  
+  # Get Room Id
+    custevent_acs_room_booked= event['custom_search_join'].select{|v| v["customization_ref"]["@script_id"] == "custevent_room_selected"}
+    netsuite_room_id= (!custevent_acs_room_booked.empty? ? custevent_acs_room_booked[0]['search_row_basic']['internal_id']['search_value']['@internal_id'] : nil)
+      
   # Build JSON
   {
-    "internal_id":event['basic']['internal_id']['search_value']['@internal_id'],
-    "title": event['basic']['title']['search_value'],
-    "startdate": est_start_date,
-    "starttime": est_start_time,
-    "endtime": est_end_time,
-    "custevent_room_selected": room ,
-    "testschedule_id": schedule_id,
-    "location_code": location_code
+    "internal_id"=&gt; event['basic']['internal_id']['search_value']['@internal_id'],
+    "title"=&gt; event['basic']['title']['search_value'],
+    "startdate"=&gt; est_start_date,
+    "enddate"=&gt; est_end_date,
+    "starttime"=&gt; est_start_time,
+    "endtime"=&gt; est_end_time,
+    "custevent_room_selected"=&gt; room ,
+    "testschedule_id"=&gt; schedule_id,
+    "location_code"=&gt; location_code,
+    "custevent_room_id"=&gt; netsuite_room_id,
+    'Recurring' =&gt; "daily"
   }.to_json
 %&gt;</parameter>
                 </parameters>
@@ -196,7 +207,7 @@
                     <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= 
   location_name = JSON.parse(@results['Get Location Information']['Submissions List JSON'])[0]['values']['Location Name']
   data = JSON.parse(@results['Flatten Calendar Event Values']['output'])
-  data['custevent_location'] = location_name 
+  data['custevent_location_name'] = location_name 
   data.delete("location_code")
   data.to_json
  %&gt;</parameter>
@@ -204,7 +215,52 @@
                 <messages></messages>
                 <dependents>
                     <task label="" type="Complete" value="">routine_add_modify_calendar_event_9</task>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_21</task>
                 </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_21" name="Get Test Schedule" x="880" y="416">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to find submissions in.">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="false" tooltip="The slug of the Form to find submissions in. If none provided, can only use Kapp Fields in search query">schedules</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Type" label="Form Type" menu="" required="false" tooltip="The Type of Form to find submissions in."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Core State" label="Core State" menu="" required="false" tooltip="Searches for submissions that have a core state that matches this parameter. If no value is provided, the results will contain submissions in all core states."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Limit" label="Limit" menu="" required="false" tooltip="Limit the number of results returned. If not provided, the server will limit the results to 25 submissions. Maximum limit 1000"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Query" label="Query" menu="" required="false" tooltip="Query to use to fetch submissions. (i.e values[First Name]=&quot;Fred&quot;)">values[Schedule Id] = "&lt;%= JSON.parse(@results['Flatten Calendar Event Values']['output'])['testschedule_id'] %&gt;"</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Timeline" label="Timeline" menu="" required="false" tooltip="Date property to search by. The default value is createdAt."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Direction" label="Direction" menu="" required="false" tooltip="Result Set sorting direction. The default value is descending."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Start Date/Time" label="Start Date/Time" menu="" required="false" tooltip="Start date/time of the timeline. This value should be used to both refine and limit the search results. Format should be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="End Date/Time" label="End Date/Time" menu="" required="false" tooltip="End date/time of the timeline. This value should be used to both refine and limit the search results. Formatshould be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Next Page Token" label="Next Page Token" menu="" required="false" tooltip="The value to use as the offset for the page of submissions to return. The submission that matches this value will not be included in the results."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_22</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_22" name="Update Calendar Data with Title" x="840" y="606">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= 
+  test_schedule = JSON.parse(@results['Get Test Schedule']['Submissions List JSON'])[0]['values']
+  data = JSON.parse(@results['Update Calendar Data with Location']['output'])
+  
+  
+  
+  data['Title'] = test_schedule['Schedule Status']
+  data.to_json
+ %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents></dependents>
             </task>
         </request>
     </taskTree>

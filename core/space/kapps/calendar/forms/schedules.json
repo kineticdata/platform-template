@@ -75,21 +75,6 @@
       ],
       "qualification": "By Opportunity",
       "status": "Active"
-    },
-    {
-      "model": "Rooms",
-      "name": "Rooms",
-      "order": [
-
-      ],
-      "parameters": [
-        {
-          "mapping": "${values('Location Id')}",
-          "name": "Location Id"
-        }
-      ],
-      "qualification": "All Active Rooms By Location",
-      "status": "Active"
     }
   ],
   "categorizations": [
@@ -363,21 +348,6 @@
       "unique": false
     },
     {
-      "name": "values[Room Id]",
-      "parts": [
-        "values[Room Id]"
-      ],
-      "unique": false
-    },
-    {
-      "name": "values[Room Id],values[Date Bucket]",
-      "parts": [
-        "values[Room Id]",
-        "values[Date Bucket]"
-      ],
-      "unique": false
-    },
-    {
       "name": "values[Sales Rep]",
       "parts": [
         "values[Sales Rep]"
@@ -614,37 +584,6 @@
                     "label": "${resources('Locations:Location Name')}",
                     "value": "${resources('Locations:Location Id')}"
                   }
-                },
-                {
-                  "type": "field",
-                  "name": "Room Id",
-                  "label": "Room",
-                  "key": "f52",
-                  "defaultValue": null,
-                  "defaultResourceName": null,
-                  "visible": true,
-                  "enabled": true,
-                  "required": true,
-                  "requiredMessage": null,
-                  "omitWhenHidden": null,
-                  "pattern": null,
-                  "constraints": [
-
-                  ],
-                  "events": [
-
-                  ],
-                  "renderAttributes": {
-                    "class": "vertical-checkbox"
-                  },
-                  "dataType": "json",
-                  "renderType": "checkbox",
-                  "choicesResourceName": "Rooms",
-                  "choicesRunIf": null,
-                  "choices": {
-                    "label": "${resources('Rooms:Room Name')}",
-                    "value": "${resources('Rooms:Room Id')}"
-                  }
                 }
               ]
             }
@@ -664,7 +603,7 @@
               "type": "section",
               "renderType": null,
               "name": "Calendar Event Section",
-              "title": "",
+              "title": null,
               "visible": true,
               "omitWhenHidden": null,
               "renderAttributes": {
@@ -782,12 +721,12 @@
                           "type": "field",
                           "name": "Start Time",
                           "label": "Start Time",
-                          "key": "f58",
+                          "key": "f72",
                           "defaultValue": null,
                           "defaultResourceName": null,
                           "visible": true,
                           "enabled": true,
-                          "required": true,
+                          "required": false,
                           "requiredMessage": null,
                           "omitWhenHidden": null,
                           "pattern": null,
@@ -845,12 +784,12 @@
                           "type": "field",
                           "name": "End Time",
                           "label": "End Time",
-                          "key": "f60",
+                          "key": "f73",
                           "defaultValue": null,
                           "defaultResourceName": null,
                           "visible": true,
                           "enabled": true,
-                          "required": true,
+                          "required": false,
                           "requiredMessage": null,
                           "omitWhenHidden": null,
                           "pattern": null,
@@ -1952,22 +1891,22 @@
           "name": "Load Related Schedules Table",
           "type": "Load",
           "action": "Custom",
-          "code": "searchConfig = typeof searchConfig===\"object\"? searchConfig : {};\nsearchConfig ={\n  // Example of full configuration of a search object to return results as a DataTable\n  relatedSchedulesTableConfig:{\n\tresultsContainer: '<table cellspacing=\"0\", border=\"0\", class=\"display\", style=\"width: 100%;\">',\n\tdata: [\n\t  { \n\t\ttitle: \"Location\",\n\t\tname: \"Location Id\",\n\t\tvisible: false\n\t  },\n\t  { \n\t\ttitle: \"Location Name\",\n\t\tname: \"Location Name\"\n\t  },\n\t  {\n\t\ttitle: \"Status\",\n\t\tname: \"Schedule Status\"\n\t  },\n\t  {\n\t\ttitle: \"Start Date\",\n\t\tname: \"Start Date\",\n\t\trender: function(data){\n        return moment(data).format('l');\n      }\n\t  },\n\t  {\n\t\ttitle: \"End Date\",\n\t\tname: \"End Date\",\n\t\trender: function(data){\n        return moment(data).format('l');\n      }\n\t  },\n\t  {\n\t\ttitle: \"Start Time\",\n\t\tname: \"Start Time\",\n\t\trender: function(data){\n        return moment(data, 'HH:mm').format('LT');\n      }\n\t  },\n\t  {\n\t\ttitle: \"End Time\",\n\t\tname: \"End Time\",\n\t\trender: function(data){\n        return moment(data, 'HH:mm').format('LT');\n      }\n\t  },\n\t  {\n\t\ttitle: \"Schedule Id\",\n\t\tname: \"Schedule Id\",\n\t\tvisible: false\n\t  },\n\t  {\n\t\ttitle: \"Submission Id\",\n\t\tname: \"Submission Id\",\n\t\tvisible: false\n\t  },\n\t  {\n\t\ttitle: \"Job Number\",\n\t\tname: \"Job Number\",\n\t\tvisible: false\n\t  },\n    // All records are related to the same Opportunity. Does this need to be displayed in the table?    \n    /*{\n\t\ttitle: \"Title\",\n\t\tname: \"Opportunity Name\"\n\t  },*/\n\t  {\n        title: \"\",\n\t\tname: \"View Button\",\n        class: 'control btn-col text-center',\n\t\trender: function ( data, type, full, meta ) {\n\t\t\treturn \"<button style='width:50px' type='button' title='View' class='btn-view' value='View'>View</button>\";\n\t\t},\n      }\n\t],\n\tresultsContainerId: 'relatedSchedules',\n\tbefore: function(configObj){ \n\t},\n\tsuccess: function (configObj){\n\t},\n\tsuccessEmpty: function(configObj){\n\t  // Render the table even if the results are empty. (ie: on page load)\n\t  configObj.renderer.type(configObj.destination, configObj);\n\t},\n\terror: function(configObj){\n\t},\n\tcomplete: function(configObj){\n\t},\n\t// Executes on click of element with class of select\n\tclickCallback: function(element, results){\n\t},\n\tremoveOnClick: false,\n\trenderer: {\n\t\ttype: DataViewer.Renderers.DataTables, // Passing a function here allows for better customization\n\t\toptions: {\n\t\t  // Options for Renderer\n\t\t  processSingleResult: false,\n\t\t  // DataTable OPTIONS; Passing options here make it clear that they are being passed to data tables\n\t\t  // responsive: OPTIONAL Default for \"BridgeDataTable\" is true but can be over written.\n\t\t  responsive: false,\n\t\t  //autoWidth: false,\n\t\t  dom: 'Brt',\n\t\t  pageLength: 15,\n\t\t  paging: false\n\t\t},\n\t},       \n  },\n}\n\n// Set the response object to the values in the JSON filed which is storing the table values.\nsearchConfig.relatedSchedulesTableConfig.response = [];\n// Load the Table with the values.\nDataViewer.renderResults( $(K('content[Related Schedules Table Container]').element()), searchConfig.relatedSchedulesTableConfig );\n\t\nif (K('field[Opportunity Id]').value()!=null){\n\tK('field[Opportunity Id]').trigger('change');\n};\n\n$('body').on( \"click\", '#relatedSchedules .btn-view', function() {\n  var table = $(this).closest('table').DataTable();\n  var data = table.row($(this).parents('tr')).data();\n    console.log('data:', data);\n  bundle.config.replaceEvent({\n    id: data['Submission Id'],\n    title: {\n      status: data['Schedule Status'],\n      location: data['Location Name'],\n    \trooms: data['Room Id'],\n      opportunity: data['Opportunity Name'],\n  \t\tstartDate: data['Start Date'],\n      startTime: data['Start Time'],\n      endDate: data['End Date'],\n      endTime: data['End Time'],\n      jobNumber: data['Job Number']\n\t\t}, \n    start: data['Start Date-Time'],\n    end: data['End Date-Time'],\n    type: data['Schedule Status']\n  })\n});",
+          "code": "searchConfig = typeof searchConfig===\"object\"? searchConfig : {};\n// Example of full configuration of a search object to return results as a DataTable\nsearchConfig['relatedSchedulesTableConfig']={\n\tresultsContainer: '<table cellspacing=\"0\", border=\"0\", class=\"display\", style=\"width: 100%;\">',\n\tdata: [\n\t  { \n\t\ttitle: \"Location\",\n\t\tname: \"Location Id\",\n\t\tvisible: false\n\t  },\n\t  { \n\t\ttitle: \"Location Name\",\n\t\tname: \"Location Name\"\n\t  },\n\t  {\n\t\ttitle: \"Status\",\n\t\tname: \"Schedule Status\"\n\t  },\n\t  {\n\t\ttitle: \"Start Date\",\n\t\tname: \"Start Date\",\n\t\trender: function(data){\n      \treturn moment(data).format('l');\n      }\n\t  },\n\t  {\n\t\ttitle: \"End Date\",\n\t\tname: \"End Date\",\n\t\trender: function(data){\n        return moment(data).format('l');\n      }\n\t  },\n\t  {\n\t\ttitle: \"Schedule Id\",\n\t\tname: \"Schedule Id\",\n\t\tvisible: false\n\t  },\n\t  {\n\t\ttitle: \"Submission Id\",\n\t\tname: \"Submission Id\",\n\t\tvisible: false\n\t  },\n\t  {\n\t\ttitle: \"Job Number\",\n\t\tname: \"Job Number\",\n\t\tvisible: false\n\t  },\n    // All records are related to the same Opportunity. Does this need to be displayed in the table?    \n    /*{\n\t\ttitle: \"Title\",\n\t\tname: \"Opportunity Name\"\n\t  },*/\n\t  {\n        title: \"\",\n\t\tname: \"View Button\",\n        class: 'control btn-col text-center',\n\t\trender: function ( data, type, full, meta ) {\n\t\t\treturn \"<button style='width:50px' type='button' title='View' class='btn-view' value='View'>View</button>\";\n\t\t},\n      }\n\t],\n\tresultsContainerId: 'relatedSchedules',\n\tbefore: function(configObj){ \n\t},\n\tsuccess: function (configObj){\n\t},\n\tsuccessEmpty: function(configObj){\n\t  // Render the table even if the results are empty. (ie: on page load)\n\t  configObj.renderer.type(configObj.destination, configObj);\n\t},\n\terror: function(configObj){\n\t},\n\tcomplete: function(configObj){\n\t},\n\t// Executes on click of element with class of select\n\tclickCallback: function(element, results){\n\t},\n\tremoveOnClick: false,\n\trenderer: {\n\t\ttype: DataViewer.Renderers.DataTables, // Passing a function here allows for better customization\n\t\toptions: {\n\t\t  // Options for Renderer\n\t\t  processSingleResult: false,\n\t\t  // DataTable OPTIONS; Passing options here make it clear that they are being passed to data tables\n\t\t  // responsive: OPTIONAL Default for \"BridgeDataTable\" is true but can be over written.\n\t\t  responsive: false,\n\t\t  //autoWidth: false,\n\t\t  dom: 'Brt',\n\t\t  pageLength: 15,\n\t\t  paging: false\n\t\t},\n\t},       \n  }\n\n// Set the response object to the values in the JSON filed which is storing the table values.\nsearchConfig.relatedSchedulesTableConfig.response = [];\n// Load the Table with the values.\nDataViewer.renderResults( $(K('content[Related Schedules Table Container]').element()), searchConfig.relatedSchedulesTableConfig );\n\t\nif (K('field[Opportunity Id]').value()!=null){\n\tK('field[Opportunity Id]').trigger('change');\n};\n\n$('body').on( \"click\", '#relatedSchedules .btn-view', function() {\n  var table = $(this).closest('table').DataTable();\n  var data = table.row($(this).parents('tr')).data();\n    console.log('data:', data);\n  bundle.config.replaceEvent({\n    id: data['Submission Id'],\n    title: {\n      status: data['Schedule Status'],\n      location: data['Location Name'],\n    \trooms: data['Room Id'],\n      opportunity: data['Opportunity Name'],\n  \t\tstartDate: data['Start Date'],\n      startTime: data['Start Time'],\n      endDate: data['End Date'],\n      endTime: data['End Time'],\n      jobNumber: data['Job Number']\n\t\t}, \n    start: data['Start Date-Time'],\n    end: data['End Date-Time'],\n    type: data['Schedule Status']\n  })\n});\n\n\n",
           "bridgedResourceName": null
         },
         {
-          "name": "Set Room Display",
+          "name": "*DISABLED* Set Room Display",
           "type": "Load",
           "action": "Custom",
           "code": "// Set the \"Room Display\" field in review Mode.  This field is used to display Rooms that are no longer active but once were\n\ninactive_rooms = resource.filter(function(room){return room['Status']==\"Inactive\"})\nmenu_options = K('field[Room Id]').options()\ninactive_rooms.forEach(function(room){\n    var index = menu_options.findIndex(function(option){return room['Room Id']==option['value']})\n    menu_options.splice(index, 1, {label: room['Room Name'], value: room['Room Id']});\n})\nK('field[Room Id]').options(menu_options)\nK('field[Room Id]').value(K('submission').value('Room Id'))\n",
-          "runIf": "form('review') == true",
+          "runIf": "false && form('review') == true",
           "bridgedResourceName": "All Rooms"
         },
         {
           "name": "Load Calendar Events Table",
           "type": "Load",
           "action": "Custom",
-          "code": "searchConfig = typeof searchConfig===\"object\"? searchConfig : {};\nsearchConfig ={\n  // Example of full configuration of a search object to return results as a DataTable\n  calendarEventsTableConfig:{\n\tresultsContainer: '<table cellspacing=\"0\", border=\"0\", class=\"display\", style=\"width: 100%;\">',\n\tdata: [\n\t  { \n\t\ttitle: \"Event\",\n\t\tname: \"Title\"\n\t  },\n\t  { \n\t\ttitle: \"Start Date\",\n\t\tname: \"Start Date\",\n    \"render\": function ( data, type, row, meta ) {\n      return moment(data).format('MM/DD/YYYY')\n    }  \n\t  },\n\t  { \n\t\ttitle: \"Start Time\",\n\t\tname: \"Start Time\",\n    \"render\": function ( data, type, row, meta ) {\n      return moment(data, \"HH:mm\").format(\"hh:mm A\");\n    }  \n\t  },\n\t  { \n\t\ttitle: \"End Time\",\n\t\tname: \"End Time\",\n    \"render\": function ( data, type, row, meta ) {\n      return moment(data, \"HH:mm\").format(\"hh:mm A\");\n    }  \n\t  },\n\t  { \n\t\ttitle: \"Location\",\n\t\tname: \"Location\"\n\t  }\n\t],\n\tresultsContainerId: 'eventSchedules',\n\tbefore: function(configObj){ \n\t},\n\tsuccess: function (configObj){\n\t},\n\tsuccessEmpty: function(configObj){\n\t  // Render the table even if the results are empty. (ie: on page load)\n\t  configObj.renderer.type(configObj.destination, configObj);\n\t},\n\terror: function(configObj){\n\t},\n\tcomplete: function(configObj){\n\t},\n\t// Executes on click of element with class of select\n\tclickCallback: function(element, results){\n\t},\n\tremoveOnClick: false,\n\trenderer: {\n\t\ttype: DataViewer.Renderers.DataTables, // Passing a function here allows for better customization\n\t\toptions: {\n\t\t  // Options for Renderer\n\t\t  processSingleResult: false,\n\t\t  // DataTable OPTIONS; Passing options here make it clear that they are being passed to data tables\n\t\t  // responsive: OPTIONAL Default for \"BridgeDataTable\" is true but can be over written.\n\t\t  responsive: false,\n\t\t  //autoWidth: false,\n\t\t  dom: 'Brt',\n\t\t  pageLength: 15,\n\t\t  paging: false\n\t\t},\n\t},       \n  },\n}\n\n// Set the response object to the values in the JSON filed which is storing the table values.\nsearchConfig.calendarEventsTableConfig.response = resource;\n// Load the Table with the values.\nDataViewer.renderResults( $(K('content[Calendar Events Table Container]').element()), searchConfig.calendarEventsTableConfig );\n\t\n\n",
+          "code": "searchConfig = typeof searchConfig===\"object\"? searchConfig : {};\n  // Example of full configuration of a search object to return results as a DataTable\nsearchConfig['calendarEventsTableConfig'] ={\n\tresultsContainer: '<table cellspacing=\"0\", border=\"0\", class=\"display\", style=\"width: 100%;\">',\n\tdata: [\n\t  { \n\t\ttitle: \"Event\",\n\t\tname: \"Title\"\n\t  },\n\t  { \n\t\ttitle: \"Start Date\",\n\t\tname: \"Start Date\",\n    \"render\": function ( data, type, row, meta ) {\n      return moment(data).format('MM/DD/YYYY')\n    }  \n\t  },\n\t  { \n\t\ttitle: \"Start Time\",\n\t\tname: \"Start Time\",\n    \"render\": function ( data, type, row, meta ) {\n      return moment(data, \"HH:mm\").format(\"hh:mm A\");\n    }  \n\t  },\n\t  { \n\t\ttitle: \"End Time\",\n\t\tname: \"End Time\",\n    \"render\": function ( data, type, row, meta ) {\n      return moment(data, \"HH:mm\").format(\"hh:mm A\");\n    }  \n\t  },\n\t  { \n\t\ttitle: \"Location\",\n\t\tname: \"Location\"\n\t  }\n\t],\n\tresultsContainerId: 'eventSchedules',\n\tbefore: function(configObj){ \n\t},\n\tsuccess: function (configObj){\n\t},\n\tsuccessEmpty: function(configObj){\n\t  // Render the table even if the results are empty. (ie: on page load)\n\t  configObj.renderer.type(configObj.destination, configObj);\n\t},\n\terror: function(configObj){\n\t},\n\tcomplete: function(configObj){\n\t},\n\t// Executes on click of element with class of select\n\tclickCallback: function(element, results){\n\t},\n\tremoveOnClick: false,\n\trenderer: {\n\t\ttype: DataViewer.Renderers.DataTables, // Passing a function here allows for better customization\n\t\toptions: {\n\t\t  // Options for Renderer\n\t\t  processSingleResult: false,\n\t\t  // DataTable OPTIONS; Passing options here make it clear that they are being passed to data tables\n\t\t  // responsive: OPTIONAL Default for \"BridgeDataTable\" is true but can be over written.\n\t\t  responsive: false,\n\t\t  //autoWidth: false,\n\t\t  dom: 'Brt',\n\t\t  pageLength: 15,\n\t\t  paging: false\n\t\t},\n\t},       \n  }\n\ndebugger;\n\n\n// Set the response object to the values in the JSON filed which is storing the table values.\nsearchConfig.calendarEventsTableConfig.response = resource;\n// Load the Table with the values.\nDataViewer.renderResults( $(K('content[Calendar Events Table Container]').element()), searchConfig.calendarEventsTableConfig );\n\t\n\n",
           "bridgedResourceName": "Calendar Events"
         }
       ],

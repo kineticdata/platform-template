@@ -7,7 +7,7 @@
         <name>netsuite-initiated</name>
         <author></author>
         <notes></notes>
-        <lastID>41</lastID>
+        <lastID>44</lastID>
         <request>
             <task definition_id="system_start_v1" id="start" name="Start" x="99" y="214">
                 <version>1</version>
@@ -89,6 +89,7 @@
                 <messages></messages>
                 <dependents>
                     <task label="Valid" type="Complete" value="JSON.parse(@results['Schedule JSON']['output']).has_key?('custrecord_ts_location_room') &amp;&amp; !JSON.parse(@results['Schedule JSON']['output'])['custrecord_ts_location_room'].nil? &amp;&amp; !JSON.parse(@results['Schedule JSON']['output'])['custrecord_ts_location_room'].empty?">utilities_echo_v1_17</task>
+                    <task label="" type="Complete" value="">utilities_echo_v1_26</task>
                 </dependents>
             </task>
             <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_7" name="Retrieve Current Schedule Record" x="968.6666" y="617.8889">
@@ -177,7 +178,7 @@
                     <task label="" type="Complete" value="">system_junction_v1_14</task>
                 </dependents>
             </task>
-            <task definition_id="routine_kinetic_submission_update_v1" id="routine_kinetic_submission_update_v1_11" name="Update Schedule Record" x="1752" y="804.3334">
+            <task definition_id="routine_kinetic_submission_update_v1" id="routine_kinetic_submission_update_v1_11" name="Update Schedule Record" x="1744" y="805.3334">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>true</defers>
@@ -248,7 +249,7 @@
                 <messages></messages>
                 <dependents></dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_17" name="Extract Rooms" x="57" y="819">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_17" name="Extract Rooms" x="58" y="819">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -291,7 +292,7 @@
                 </parameters>
                 <messages></messages>
                 <dependents>
-                    <task label="" type="Complete" value="">utilities_echo_v1_26</task>
+                    <task label="" type="Complete" value="">utilities_echo_v1_21</task>
                 </dependents>
             </task>
             <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_20" name="Retrieve Room Record" x="367.8889" y="1000.2222">
@@ -357,7 +358,7 @@ raw
                     <task label="" type="Complete" value="">utilities_echo_v1_25</task>
                 </dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_24" name="Location Id" x="692" y="618">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_24" name="Location Id" x="694" y="724">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -375,9 +376,7 @@ location.to_json
 %&gt;</parameter>
                 </parameters>
                 <messages></messages>
-                <dependents>
-                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_7</task>
-                </dependents>
+                <dependents></dependents>
             </task>
             <task definition_id="utilities_echo_v1" id="utilities_echo_v1_25" name="Extract Location Id" x="368" y="1340">
                 <version>1</version>
@@ -396,7 +395,7 @@ raw
                     <task label="" type="Complete" value="">system_loop_tail_v1_19</task>
                 </dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_26" name="Build Start-End Date-Times" x="692.2222" y="1171.1111">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_26" name="Build Start-End Date-Times" x="371.2222" y="616.1111">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -420,7 +419,7 @@ end_dt = DateTime.strptime(sched['custrecord_ts_end_date'], "%m/%d/%Y")
                     <task label="" type="Complete" value="">utilities_echo_v1_27</task>
                 </dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_27" name="Calculate Date Bucket" x="692.2222" y="999.6666">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_27" name="Calculate Date Bucket" x="659.2222" y="616.6666">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -503,7 +502,7 @@ buckets.to_json
                 </parameters>
                 <messages></messages>
                 <dependents>
-                    <task label="" type="Complete" value="">utilities_echo_v1_21</task>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_43</task>
                 </dependents>
             </task>
             <task definition_id="utilities_echo_v1" id="utilities_echo_v1_30" name="Schedule Values" x="1227" y="616.3334">
@@ -515,20 +514,20 @@ buckets.to_json
                 <parameters>
                     <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
 sched = JSON.parse(@results['Schedule JSON']['output'])
-loc = JSON.parse(@results['Location Id']['output'])
+#loc = JSON.parse(@results['Location Id']['output'])
 time = JSON.parse(@results['Build Start-End Date-Times']['output'])
-
+loc= JSON.parse(@results['Retrieve Location Data']['Submissions List JSON'])[0]['values']['Location Id']
 {
  'Status' =&gt; "Active",
  'Opportunity Id' =&gt; sched['custrecord_ts_opportunity'],
- 'Location Id' =&gt; loc[0],
- 'Room Id' =&gt; JSON.parse(@results['Rooms Array']['output']),
- 'Start Time' =&gt; DateTime.parse(sched['custrecord_ts_start_time']).strftime("%H:%M"),
- 'End Time' =&gt; DateTime.parse(sched['custrecord_ts_end_time']).strftime("%H:%M"),
+ #'Location Id' =&gt; loc[0],
+ #'Room Id' =&gt; JSON.parse(@results['Rooms Array']['output']),
+ #'Start Time' =&gt; DateTime.parse(sched['custrecord_ts_start_time']).strftime("%H:%M"),
+ #'End Time' =&gt; DateTime.parse(sched['custrecord_ts_end_time']).strftime("%H:%M"),
  'Start Date' =&gt; DateTime.strptime(sched['custrecord_ts_start_date'], "%m/%d/%Y").strftime("%Y-%m-%d"),
  'End Date' =&gt; DateTime.strptime(sched['custrecord_ts_end_date'], "%m/%d/%Y").strftime("%Y-%m-%d"), 
  'Date Bucket' =&gt; JSON.parse(@results['Calculate Date Bucket']['output']),
- 'Schedule Create Date' =&gt; DateTime.strptime(sched['custrecord_ts_opp_date_created'], "%m/%d/%Y").strftime("%Y-%m-%d"), 
+ #'Schedule Create Date' =&gt; DateTime.strptime(sched['custrecord_ts_opp_date_created'], "%m/%d/%Y").strftime("%Y-%m-%d"), 
  'Schedule Id' =&gt; sched['internalid'],
  'Schedule Status' =&gt; sched['custrecord_ts_status'], #This is set from the Opportunities Status
  'Customer' =&gt; sched['custrecord_ts_opp_customer'],
@@ -553,7 +552,8 @@ time = JSON.parse(@results['Build Start-End Date-Times']['output'])
  'Comments' =&gt; sched['custrecord_ts_comments'],
  'Job Number' =&gt; sched['custrecord_ts_j_num'],
  'Recurring' =&gt; "daily",
- 'Location String' =&gt; sched['custrecord_ts_location_string']
+ 'Location String' =&gt; sched['custrecord_ts_location_string'],
+ 'Location Id' =&gt; loc
 }.to_json
 %&gt;</parameter>
                 </parameters>
@@ -622,7 +622,7 @@ opp = JSON.parse(@results['Opportunity JSON']['output'])
             <task definition_id="routine_add_modify_calendar_event" id="routine_add_modify_calendar_event_40" name="Add Modify Calendar Event" x="533.5" y="492.5">
                 <version>1</version>
                 <configured>true</configured>
-                <defers>false</defers>
+                <defers>true</defers>
                 <deferrable>true</deferrable>
                 <visible>true</visible>
                 <parameters>
@@ -646,6 +646,43 @@ opp = JSON.parse(@results['Opportunity JSON']['output'])
                 <dependents>
                     <task label="" type="Complete" value="">routine_add_modify_calendar_event_40</task>
                 </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_43" name="Retrieve Location Data" x="901" y="726">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to find submissions in.">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="false" tooltip="The slug of the Form to find submissions in. If none provided, can only use Kapp Fields in search query">rooms</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Type" label="Form Type" menu="" required="false" tooltip="The Type of Form to find submissions in."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Core State" label="Core State" menu="" required="false" tooltip="Searches for submissions that have a core state that matches this parameter. If no value is provided, the results will contain submissions in all core states."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Limit" label="Limit" menu="" required="false" tooltip="Limit the number of results returned. If not provided, the server will limit the results to 25 submissions. Maximum limit 1000">1000</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Query" label="Query" menu="" required="false" tooltip="Query to use to fetch submissions. (i.e values[First Name]=&quot;Fred&quot;)">values[Location Name]="&lt;%= JSON.parse(@results['Schedule JSON']['output'])['custrecord_ts_location_name'] %&gt;"</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Timeline" label="Timeline" menu="" required="false" tooltip="Date property to search by. The default value is createdAt."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Direction" label="Direction" menu="" required="false" tooltip="Result Set sorting direction. The default value is descending."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Start Date/Time" label="Start Date/Time" menu="" required="false" tooltip="Start date/time of the timeline. This value should be used to both refine and limit the search results. Format should be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="End Date/Time" label="End Date/Time" menu="" required="false" tooltip="End date/time of the timeline. This value should be used to both refine and limit the search results. Formatshould be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Next Page Token" label="Next Page Token" menu="" required="false" tooltip="The value to use as the offset for the page of submissions to return. The submission that matches this value will not be included in the results."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_7</task>
+                    <task label="" type="Complete" value="">utilities_echo_v1_44</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_44" name="test" x="1110.6666" y="739.8889">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= JSON.parse(@results['Retrieve Location Data']['Submissions List JSON'])[0]['values']['Location Id'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents></dependents>
             </task>
         </request>
     </taskTree>

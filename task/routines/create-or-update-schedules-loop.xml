@@ -1,0 +1,473 @@
+<tree schema_version="1.0">
+    <sourceName>-</sourceName>
+    <sourceGroup>-</sourceGroup>
+    <definitionId>routine_create_or_update_schedules_loop</definitionId>
+    <type>Global Routine</type>
+    <status>Active</status>
+    <taskTree builder_version="" schema_version="1.0" version="">
+        <name>Create or Update Schedules Loop</name>
+        <author>brian.peterson@kineticdata.com</author>
+        <notes></notes>
+        <lastID>152</lastID>
+        <taskDefinition id="routine_create_or_update_schedules_loop" name="Create or Update Schedules Loop" schema_version="1.0" version="1">
+            <visible>false</visible>
+            <deferrable>true</deferrable>
+            <parameters>
+                <parameter id="Updated Schedules JSON" label="Updated Schedules JSON" required="true" tooltip="JSON of updated Schedules"></parameter>
+                <parameter id="Rooms Array" label="Rooms Array" required="true" tooltip="Array of Room Definitions"></parameter>
+            </parameters>
+            <handler name="system_tree_call" version="1"></handler>
+            <results format="xml"></results>
+        </taskDefinition>
+        <request>
+            <task definition_id="system_start_v1" id="start" name="Start" x="75" y="51">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_retrieve_test_schedule_145</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_77" name="Retrieve Current Schedule Record" x="2218.414" y="454.27472">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to find submissions in.">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="false" tooltip="The slug of the Form to find submissions in. If none provided, can only use Kapp Fields in search query">schedules</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Type" label="Form Type" menu="" required="false" tooltip="The Type of Form to find submissions in."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Core State" label="Core State" menu="" required="false" tooltip="Searches for submissions that have a core state that matches this parameter. If no value is provided, the results will contain submissions in all core states."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Limit" label="Limit" menu="" required="false" tooltip="Limit the number of results returned. If not provided, the server will limit the results to 25 submissions. Maximum limit 1000">1000</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Query" label="Query" menu="" required="false" tooltip="Query to use to fetch submissions. (i.e values[First Name]=&quot;Fred&quot;)">values[Schedule Id]="&lt;%=JSON.parse(@results['Flatten Schedule Values']['output'])['internal_id'] %&gt;"</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Timeline" label="Timeline" menu="" required="false" tooltip="Date property to search by. The default value is createdAt."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Direction" label="Direction" menu="" required="false" tooltip="Result Set sorting direction. The default value is descending."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Start Date/Time" label="Start Date/Time" menu="" required="false" tooltip="Start date/time of the timeline. This value should be used to both refine and limit the search results. Format should be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="End Date/Time" label="End Date/Time" menu="" required="false" tooltip="End date/time of the timeline. This value should be used to both refine and limit the search results. Formatshould be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Next Page Token" label="Next Page Token" menu="" required="false" tooltip="The value to use as the offset for the page of submissions to return. The submission that matches this value will not be included in the results."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_129</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submission_create_v1" id="routine_kinetic_submission_create_v1_78" name="Create Schedule Record" x="2360.4358" y="731.652">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to create the submission in">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="true" tooltip="The slug of the Form to create the submission in">schedules</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Current Page Name" label="Current Page Name" menu="" required="false" tooltip="The page to set the submission to"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Current Page Navigation" label="Current Page Navigation" menu="" required="false" tooltip="The direction of the next page (next or previous)"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Values JSON" label="Values JSON" menu="" required="false" tooltip="A JSON Map of values to set into the submissions fields">&lt;%= @results['Schedule Values']['output'] %&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Origin Id" label="Origin Id" menu="" required="false" tooltip="Sets the submissions origin to another Kinetic Submission"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Parent Id" label="Parent Id" menu="" required="false" tooltip="Sets the submissions parent to another Kinetic Submission"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Submit Submission" label="Submit Submission" menu="" required="false" tooltip="True or False, if Submission should be Submitted when created">true</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_80</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submission_update_v1" id="routine_kinetic_submission_update_v1_79" name="Update Schedule Record" x="2096.0116454545455" y="735.6583636363633">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Id" label="Id" menu="" required="true" tooltip="The id of the submission to update">&lt;%= JSON.parse(@results['Retrieve Current Schedule Record']['Submissions List JSON'])[0]['id'] %&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Core State" label="Updated - Core State" menu="" required="false" tooltip="The submissions core state"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Current Page Name" label="Updated - Current Page Name" menu="" required="false" tooltip="The page to set the submission to"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Current Page Navigation" label="Updated - Current Page Navigation" menu="" required="false" tooltip="The direction of the next page (next or previous)"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Origin Id" label="Updated - Origin Id" menu="" required="false" tooltip="The Id of the submissions origin"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Parent Id" label="Updated - Parent Id" menu="" required="false" tooltip="The Id of the submissions parent"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated - Values JSON" label="Updated - Values JSON" menu="" required="false" tooltip="A JSON representation of the submissions values">&lt;%= @results['Schedule Values']['output'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_80</task>
+                </dependents>
+            </task>
+            <task definition_id="system_junction_v1" id="system_junction_v1_80" name="Junction Create or Update" x="2219.722" y="883.84985">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_90</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_82" name="Build Start-End Date-Times" x="2218.454" y="74.106255">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+fields = JSON.parse(@results['Flatten Schedule Values']['output'])
+start_date = DateTime.parse(fields['custrecord_ts_start_date'])#.new_offset('EST') unless fields['custrecord_ts_start_date'].nil?
+end_date = DateTime.parse(fields['custrecord_ts_end_date'])#.new_offset('EST') unless fields['custrecord_ts_end_date'].nil?
+
+{
+  'start_date' =&gt; start_date,
+  'end_date' =&gt; end_date
+}.to_json 
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_83</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_83" name="Calculate Date Bucket" x="2219.0366" y="301.21243">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+require 'time'
+
+start_time_string = JSON.parse(@results['Build Start-End Date-Times']['output'])['start_date']
+end_time_string = JSON.parse(@results['Build Start-End Date-Times']['output'])['end_date']
+
+#
+# Generates the buckets for each day, month, and year between
+# the start and end times.
+#
+buckets = [];
+
+## Get the start and end dates
+start = Time.parse(start_time_string)#.utc
+end_time = Time.parse(end_time_string)#.utc
+
+## Patterns
+yearPattern = "%Y"
+monthPattern = "%Y-%m"
+dayPattern = "%Y-%m-%d"
+#hourPattern = "%Y-%m-%d-%H"
+
+## Get the start month and year buckets
+lastBucketDay = start.strftime(dayPattern)
+lastBucketMonth = start.strftime(monthPattern)
+lastBucketYear = start.strftime(yearPattern)
+
+## Add the start buckets
+#buckets.push(start.strftime(hourPattern))
+buckets.push(lastBucketDay)
+buckets.push(lastBucketMonth)
+buckets.push(lastBucketYear)
+## Add the end buckets
+#if (start.strftime(hourPattern) &lt; end_time.strftime(hourPattern))
+#  buckets.push(end_time.strftime(hourPattern))
+#end
+if (start.strftime(dayPattern) &lt; end_time.strftime(dayPattern))
+  buckets.push(end_time.strftime(dayPattern))
+end
+if (start.strftime(monthPattern) &lt; end_time.strftime(monthPattern))
+  buckets.push(end_time.strftime(monthPattern))
+end
+if (start.strftime(yearPattern) &lt; end_time.strftime(yearPattern))
+  buckets.push(end_time.strftime(yearPattern))
+end
+
+# Add each day bucket in between the start and end
+#while ((start+=(60*60)).strftime(hourPattern) &lt; end_time.strftime(hourPattern))
+while ((start+=(60*60)).strftime(dayPattern) &lt; end_time.strftime(dayPattern))
+  #buckets.push(start.strftime(hourPattern))
+  # Add each new day bucket
+  if (start.strftime(dayPattern) &lt; end_time.strftime(dayPattern) &amp;&amp; start.strftime(dayPattern) &gt; lastBucketDay)
+      lastBucketDay = start.strftime(dayPattern)
+      buckets.push(lastBucketDay)
+  end
+  # Add each new month bucket
+  if (start.strftime(monthPattern) &lt; end_time.strftime(monthPattern) &amp;&amp; start.strftime(monthPattern) &gt; lastBucketMonth)
+      lastBucketMonth = start.strftime(monthPattern)
+      buckets.push(lastBucketMonth)
+  end
+  # Add each new year bucket
+  if (start.strftime(yearPattern) &lt; end_time.strftime(yearPattern) &amp;&amp; start.strftime(yearPattern) &gt; lastBucketYear)
+      lastBucketYear = start.strftime(yearPattern)
+      buckets.push(lastBucketYear)
+  end
+end
+
+# Sort and removing duplicates
+buckets.sort!
+buckets.uniq!
+
+buckets.to_json
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_77</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_90" name="Retrieve Opportunity from Kinetic" x="2224.5881" y="1133.2146">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to find submissions in.">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="false" tooltip="The slug of the Form to find submissions in. If none provided, can only use Kapp Fields in search query">opportunities</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Type" label="Form Type" menu="" required="false" tooltip="The Type of Form to find submissions in."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Core State" label="Core State" menu="" required="false" tooltip="Searches for submissions that have a core state that matches this parameter. If no value is provided, the results will contain submissions in all core states."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Limit" label="Limit" menu="" required="false" tooltip="Limit the number of results returned. If not provided, the server will limit the results to 25 submissions. Maximum limit 1000">1000</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Query" label="Query" menu="" required="false" tooltip="Query to use to fetch submissions. (i.e values[First Name]=&quot;Fred&quot;)">values[Opportunity Id]="&lt;%= JSON.parse(@results['Flatten Schedule Values']['output'])['custrecord_ts_opportunity']['@internal_id'] %&gt;"</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Timeline" label="Timeline" menu="" required="false" tooltip="Date property to search by. The default value is createdAt."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Direction" label="Direction" menu="" required="false" tooltip="Result Set sorting direction. The default value is descending."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Start Date/Time" label="Start Date/Time" menu="" required="false" tooltip="Start date/time of the timeline. This value should be used to both refine and limit the search results. Format should be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="End Date/Time" label="End Date/Time" menu="" required="false" tooltip="End date/time of the timeline. This value should be used to both refine and limit the search results. Formatshould be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Next Page Token" label="Next Page Token" menu="" required="false" tooltip="The value to use as the offset for the page of submissions to return. The submission that matches this value will not be included in the results."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Found" type="Complete" value="@results['Retrieve Opportunity from Kinetic']['Count'].to_i &lt; 1">system_junction_v1_100</task>
+                    <task label="Not Found" type="Complete" value="@results['Retrieve Opportunity from Kinetic']['Count'].to_i &lt; 1">utilities_echo_v1_94</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_94" name="Echo Opportunity Id" x="1699.5502" y="1145.6371">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= JSON.parse(@results['Flatten Schedule Values']['output'])['custrecord_ts_opportunity']['@internal_id'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_100</task>
+                </dependents>
+            </task>
+            <task definition_id="system_junction_v1" id="system_junction_v1_100" name="Junction End" x="1085.5944" y="1444.1636">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_tree_return_v1_149</task>
+                </dependents>
+            </task>
+            <task definition_id="system_noop_v1" id="system_noop_v1_101" name="Valid Schedule" x="1315.4058" y="75.004265">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_151</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_111" name="Flatten Schedule Values" x="615.87085" y="58.793087">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+  #Flatten the format that was recieved from Netsuite into a more consumable obj
+  output={}
+  record =JSON.parse(@results['Get Netsuite Record']['Output'])['get_response']['read_response']['record']
+  sched = record['custom_field_list']['custom_field']
+  sched.map { |obj| 
+    output[obj["@script_id"]] = obj["value"]
+  }
+  output['internal_id']= record['@internal_id']
+  output.to_json
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Has Opportunity" type="Complete" value="!JSON.parse(@results['Flatten Schedule Values']['output']) ['custrecord_ts_opportunity'].nil? &amp;&amp; !JSON.parse(@results['Flatten Schedule Values']['output']) ['custrecord_ts_opportunity']['@internal_id'].nil?">utilities_echo_v1_132</task>
+                    <task label="No Opportunity" type="Complete" value="JSON.parse(@results['Flatten Schedule Values']['output']) ['custrecord_ts_opportunity'].nil? || JSON.parse(@results['Flatten Schedule Values']['output']) ['custrecord_ts_opportunity']['@internal_id'].nil?">system_junction_v1_100</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_129" name="Schedule Values" x="2220.5789" y="602.652">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+require 'date'
+
+sched = JSON.parse(@results['Flatten Schedule Values']['output'])
+
+{
+ 'Status' =&gt; "Active",
+ 'Opportunity Id' =&gt; sched['custrecord_ts_opportunity']['@internal_id'],
+ 'Project' =&gt; (sched['custrecord_ts_project']['name'] unless sched['custrecord_ts_project'].nil?),  
+ 'Project URL' =&gt; sched['custrecord_ts_project_url'],    
+ 'Location Id' =&gt; @results['Location Id']['output'],
+ #'Location Id' =&gt; JSON.parse(@results['Room Ids and Location Id']['output'])['Location Id'],
+ #'Room Id' =&gt; JSON.parse(@results['Room Ids and Location Id']['output'])['Room Ids'],
+ #'Start Time' =&gt;DateTime.parse(sched['custrecord_ts_start_time']).new_offset('EST').strftime("%H:%M"),
+ #'End Time' =&gt;DateTime.parse(sched['custrecord_ts_end_time']).new_offset('EST').strftime("%H:%M"),
+ #'Start Time' =&gt;DateTime.parse(sched['custrecord_ts_start_time']).strftime("%H:%M"),
+ #'End Time' =&gt;DateTime.parse(sched['custrecord_ts_end_time']).strftime("%H:%M"),
+ #'Start Date' =&gt; DateTime.parse(sched['custrecord_ts_start_date']).new_offset('EST').strftime("%Y-%m-%d"),
+ #'End Date' =&gt; DateTime.parse(sched['custrecord_ts_end_date']).new_offset('EST').strftime("%Y-%m-%d"),
+ 'Start Date' =&gt; DateTime.parse(sched['custrecord_ts_start_date']).strftime("%Y-%m-%d"),
+ 'End Date' =&gt; DateTime.parse(sched['custrecord_ts_end_date']).strftime("%Y-%m-%d"),
+ 'Date Bucket' =&gt; @results['Calculate Date Bucket']['output'],
+ 'Schedule Create Date' =&gt; (DateTime.strptime(sched['custrecord_ts_opp_date_created'], "%m/%d/%Y").strftime("%Y-%m-%d") unless sched['custrecord_ts_opp_date_created'].nil?),  
+ 'Schedule Id' =&gt; sched['internal_id'],
+ 'Schedule Status' =&gt; sched['custrecord_ts_status'],
+ 'Customer' =&gt; sched['custrecord_ts_opp_customer'],
+ 'Opportunity URL' =&gt; sched['custrecord_ts_opp_url'],
+ 'Sales Rep' =&gt; sched['custrecord_ts_sales_rep'],
+ 'Project Manager' =&gt; sched['custrecord_ts_project_manager'], 
+ 'Recruit Manager' =&gt; (sched['custrecord_ts_recruit_manager']['name'] unless sched['custrecord_ts_recruit_manager'].nil?),
+ 'Methodology' =&gt; sched['custrecord_ts_study_methodology'],
+ 'Equipment' =&gt; sched['custrecord_ts_equipment_requirements'],
+ 'Client On-Site' =&gt; (sched['custrecord_ts_client_onsite'] == "true") ? ["true"] : [],
+ 'Proctor' =&gt; (sched['custrecord_ts_proctor2']=="true") ? ["Yes"] : [],
+ 'Parent - Child' =&gt; (sched['custrecord_ts_parent_child']=="true") ? ["Yes"] : [],
+ 'N per Facility' =&gt; sched['custrecord_ts_n_per_facility'],
+ 'Number of Visits' =&gt; sched['custrecord_ts_num_days_visits'],
+ 'Session Length' =&gt; sched['custrecord_ts_session_length'],
+ 'Incentive Amount' =&gt; '%.2f' % sched['custrecord_ts_incentive_amount'].to_f, # Convert to 2 Decimals
+ 'Session Times' =&gt; sched['custrecord_ts_session_times'], 
+ 'Pairs' =&gt; (sched['custrecord_ts_pairs'] == "Yes") ? ["Yes"].to_json : [].to_json,
+ 'Kids Only' =&gt; (sched['custrecord_ts_kids_only'] == "Yes") ? ["Yes"].to_json : [].to_json,   
+ 'Comments' =&gt; sched['custrecord_ts_comments'],
+ 'Job Number' =&gt; sched['custrecord_ts_j_num'],
+ 'Recurring' =&gt; "daily",
+ 'Location String' =&gt; sched['custrecord_ts_location_string']
+}.to_json
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="New" type="Complete" value="@results['Retrieve Current Schedule Record']['Count'].to_i==0">routine_kinetic_submission_create_v1_78</task>
+                    <task label="Update" type="Complete" value="@results['Retrieve Current Schedule Record']['Count'].to_i!=0">routine_kinetic_submission_update_v1_79</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_132" name="Validate Schedule" x="964.78674" y="65.0671">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= 
+  values_json = JSON.parse(@results['Flatten Schedule Values']['output']) 
+  validation_keys = ["custrecord_ts_opportunity","custrecord_ts_start_date", "custrecord_ts_end_date"] 
+  
+  validation_keys.all? {|key| values_json.key? key}
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="valid" type="Complete" value="@results['Validate Schedule']['output'] ==&quot;true&quot;">system_noop_v1_101</task>
+                    <task label="Invalid" type="Complete" value="@results['Validate Schedule']['output'] !=&quot;true&quot;">system_noop_v1_140</task>
+                </dependents>
+            </task>
+            <task definition_id="system_noop_v1" id="system_noop_v1_140" name="Not a Valid Schedule" x="1004.1753454545452" y="536.4074">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_100</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_retrieve_test_schedule" id="routine_retrieve_test_schedule_145" name="Get Netsuite Record" x="295.8573" y="58.8576">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Internal Id" label="Internal Id" menu="" required="true" tooltip="The Custom Record Internal Id">&lt;%= JSON.parse(@inputs['Updated Schedules JSON'])['basic']['internal_id']['search_value']['@internal_id']%&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Type Id" label="Type Id" menu="" required="true" tooltip="The Id of the Form Type that the record matches.">219</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Retries" label="Retries" menu="" required="true" tooltip="Number of times to retry">3</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Wait" label="Wait" menu="" required="true" tooltip="Time to Wait to retry (Minutes)">1</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_111</task>
+                </dependents>
+            </task>
+            <task definition_id="system_tree_return_v1" id="system_tree_return_v1_149" name="Return" x="1083.0944" y="1644.1636">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents></dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_151" name="Location Id" x="1792.727272727274" y="76.36363636363639">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+output = {}
+netsuite_location_id = JSON.parse(@results['Flatten Schedule Values']['output'])['custrecord_ts_location_name']['@internal_id']
+
+result =JSON.parse(@inputs['Rooms Array']).select { |room| 
+ room.keys[0]==netsuite_location_id
+}
+
+Location_id = result.map { |room| 
+ room.values[0]['Location Id']
+}.uniq.compact[0]
+%&gt;
+</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Has Location" type="Complete" value="!@results['Location Id']['output'].nil?">utilities_echo_v1_82</task>
+                    <task label="No Location" type="Complete" value="@results['Location Id']['output'].nil?">system_noop_v1_152</task>
+                </dependents>
+            </task>
+            <task definition_id="system_noop_v1" id="system_noop_v1_152" name="Location Not Found" x="1565.726727272726" y="545.0153459090908">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages>
+                    <message type="Complete"></message>
+                </messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_100</task>
+                </dependents>
+            </task>
+        </request>
+    </taskTree>
+</tree>

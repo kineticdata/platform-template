@@ -1,0 +1,451 @@
+{
+  "anonymous": false,
+  "attributes": [
+
+  ],
+  "bridgedResources": [
+
+  ],
+  "categorizations": [
+
+  ],
+  "customHeadContent": null,
+  "description": "",
+  "indexDefinitions": [
+    {
+      "name": "closedBy",
+      "parts": [
+        "closedBy"
+      ],
+      "unique": false
+    },
+    {
+      "name": "createdBy",
+      "parts": [
+        "createdBy"
+      ],
+      "unique": false
+    },
+    {
+      "name": "handle",
+      "parts": [
+        "handle"
+      ],
+      "unique": false
+    },
+    {
+      "name": "submittedBy",
+      "parts": [
+        "submittedBy"
+      ],
+      "unique": false
+    },
+    {
+      "name": "updatedBy",
+      "parts": [
+        "updatedBy"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Location Code]",
+      "parts": [
+        "values[Location Code]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Location Id NetSuite]",
+      "parts": [
+        "values[Location Id NetSuite]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Location Id]",
+      "parts": [
+        "values[Location Id]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Location Id],values[Status]",
+      "parts": [
+        "values[Location Id]",
+        "values[Status]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Location Name]",
+      "parts": [
+        "values[Location Name]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Room - Short Name]",
+      "parts": [
+        "values[Room - Short Name]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Room Id NetSuite]",
+      "parts": [
+        "values[Room Id NetSuite]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Room Id]",
+      "parts": [
+        "values[Room Id]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Room Name]",
+      "parts": [
+        "values[Room Name]"
+      ],
+      "unique": false
+    },
+    {
+      "name": "values[Status]",
+      "parts": [
+        "values[Status]"
+      ],
+      "unique": false
+    }
+  ],
+  "name": "Rooms",
+  "notes": null,
+  "pages": [
+    {
+      "advanceCondition": null,
+      "displayCondition": null,
+      "displayPage": null,
+      "elements": [
+        {
+          "type": "section",
+          "renderType": null,
+          "name": "Location Information",
+          "title": "Location Information",
+          "visible": true,
+          "omitWhenHidden": null,
+          "renderAttributes": {
+          },
+          "elements": [
+            {
+              "type": "field",
+              "name": "Location Name",
+              "label": "Location Name",
+              "key": "f19",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": false,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Location Id",
+              "label": "Location Id <br> <ul>   <li>Atlanta = c9ed7cde-d7a0-45a1-96a5-29d30016f474</li>   <li>Boston = 5eea3fde-ba72-4025-9146-3addcbe38fb5</li>   <li>Deerfield = 63d8687f-c360-4264-975e-d652f8f06ac7</li>   <li>Dallas = 10546868-503e-4249-b16e-dcd0ee80dd23</li>   <li>Offsite = e4f0c4c7-1590-4d7b-9e05-b70af58d33bc</li>   <li>Old Bridge = 11762a81-b8bf-4199-9ec6-7600d0503e0c</li>   <li>Redwood City = 7f49375a-df4c-4d4b-954f-c7fe4c5870d6</li>   <li>Atlanta Sandy Springs = 7a1b6e04-6f89-4b89-aef8-757c11991114</li> </ul>",
+              "key": "f18",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": true,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Location Id NetSuite",
+              "label": "Location Id NetSuite<br><ul><li>Deerfield = 1</li><li>Redwood City = 2</li><li>Old Bridge = 3</li><li>Mokena = 4</li><li>Dallas = 5</li><li>Offsite = 6</li><li>TBD = 4</li><li>Atlanta = 8</li><li>Boston = 9</li></ul>",
+              "key": "f23",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": true,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Location Code",
+              "label": "Location Code",
+              "key": "f20",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": false,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Room Id NetSuite",
+              "label": "Room Id NetSuite",
+              "key": "f21",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": false,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Room Name",
+              "label": "Room Name",
+              "key": "f4",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": false,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Room - Short Name",
+              "label": "Room - Short Name",
+              "key": "f22",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": false,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            },
+            {
+              "type": "field",
+              "name": "Room Capabilities",
+              "label": "Room Capabilities",
+              "key": "f16",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": false,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "json",
+              "renderType": "checkbox",
+              "choicesResourceName": null,
+              "choicesRunIf": null,
+              "choices": [
+
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "renderType": null,
+          "name": "Kinetic Information",
+          "title": null,
+          "visible": true,
+          "omitWhenHidden": null,
+          "renderAttributes": {
+          },
+          "elements": [
+            {
+              "type": "field",
+              "name": "Status",
+              "label": "Status",
+              "key": "f5",
+              "defaultValue": "Active",
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": true,
+              "required": true,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "dropdown",
+              "choicesResourceName": null,
+              "choicesRunIf": null,
+              "choices": [
+                {
+                  "label": "Active",
+                  "value": "Active"
+                },
+                {
+                  "label": "Inactive",
+                  "value": "Inactive"
+                }
+              ]
+            },
+            {
+              "type": "field",
+              "name": "Room Id",
+              "label": "Room Id",
+              "key": "f2",
+              "defaultValue": null,
+              "defaultResourceName": null,
+              "visible": true,
+              "enabled": false,
+              "required": true,
+              "requiredMessage": null,
+              "omitWhenHidden": null,
+              "pattern": null,
+              "constraints": [
+
+              ],
+              "events": [
+
+              ],
+              "renderAttributes": {
+              },
+              "dataType": "string",
+              "renderType": "text",
+              "rows": 1
+            }
+          ]
+        },
+        {
+          "visible": true,
+          "renderAttributes": {
+          },
+          "name": "Submit Button",
+          "label": "Submit",
+          "type": "button",
+          "renderType": "submit-page",
+          "enabled": true
+        }
+      ],
+      "events": [
+        {
+          "name": "Create Room Id GUID",
+          "type": "Submit",
+          "action": "Custom",
+          "code": "function generateUUID() { \n    var d = new Date().getTime();\n    var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n        var r = Math.random() * 16;\n        if(d > 0){\n            r = (d + r)%16 | 0;\n            d = Math.floor(d/16);\n        } else {\n            r = (d2 + r)%16 | 0;\n            d2 = Math.floor(d2/16);\n        }\n        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);\n    });\n}\n\nK('field[Room Id]').value(generateUUID());",
+          "runIf": "values('Room Id')==null"
+        }
+      ],
+      "name": "Page 1",
+      "renderType": "submittable",
+      "type": "page"
+    }
+  ],
+  "securityPolicies": [
+
+  ],
+  "slug": "rooms",
+  "status": "Active",
+  "submissionLabelExpression": "",
+  "type": "Datastore"
+}

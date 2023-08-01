@@ -8,7 +8,7 @@
         <name>Import Opportunities and Schedules</name>
         <author>brian.peterson@kineticdata.com</author>
         <notes></notes>
-        <lastID>162</lastID>
+        <lastID>163</lastID>
         <taskDefinition id="routine_import_opportunities_and_schedules" name="Import Opportunities and Schedules" schema_version="1.0" version="1">
             <visible>false</visible>
             <deferrable>true</deferrable>
@@ -78,7 +78,6 @@ output.to_json
                 <messages></messages>
                 <dependents>
                     <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_102</task>
-                    <task label="" type="Complete" value="">utilities_echo_v1_158</task>
                 </dependents>
             </task>
             <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_102" name="Retrieve All Rooms" x="1880.4607" y="53.646675">
@@ -170,7 +169,7 @@ end
                     <task label="" type="Complete" value="">netsuite_generic_soap_api_v1_148</task>
                 </dependents>
             </task>
-            <task definition_id="routine_import_opportunities_and_schedules" id="routine_import_opportunities_and_schedules_120" name="Rerun Next Date Chunk" x="3748.0117" y="168.26315">
+            <task definition_id="routine_import_opportunities_and_schedules" id="routine_import_opportunities_and_schedules_120" name="Rerun Next Date Chunk" x="4903.0117" y="151.26315">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>true</defers>
@@ -191,7 +190,7 @@ date_range = JSON.parse(@results['Determine Date Range']['output'])
                     <task label="" type="Complete" value="">system_join_v1_124</task>
                 </dependents>
             </task>
-            <task definition_id="system_tree_return_v1" id="system_tree_return_v1_122" name="Return" x="4013.7603" y="55.076023">
+            <task definition_id="system_tree_return_v1" id="system_tree_return_v1_122" name="Return" x="5500.7603" y="56.07602299999999">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -203,7 +202,7 @@ date_range = JSON.parse(@results['Determine Date Range']['output'])
                 <messages></messages>
                 <dependents></dependents>
             </task>
-            <task definition_id="system_join_v1" id="system_join_v1_124" name="Join Finish" x="3751.345" y="65.929825">
+            <task definition_id="system_join_v1" id="system_join_v1_124" name="Join Finish" x="5175.344999999999" y="66.929825">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -292,8 +291,7 @@ new_arr.to_json
                 <parameters></parameters>
                 <messages></messages>
                 <dependents>
-                    <task label="continue" type="Complete" value="JSON.parse(@results['Determine Date Range']['output'])['next_action'] == &quot;continue&quot;">routine_import_opportunities_and_schedules_120</task>
-                    <task label="end" type="Complete" value="JSON.parse(@results['Determine Date Range']['output'])['next_action'] == &quot;end&quot;">system_join_v1_124</task>
+                    <task label="" type="Complete" value="">utilities_echo_v1_158</task>
                 </dependents>
             </task>
             <task definition_id="system_noop_v1" id="system_noop_v1_145" name="No Schedules Found" x="3026.4805" y="151.50433">
@@ -395,7 +393,7 @@ end_dt = dates['end_date']
                     <task label="" type="Complete" value="">system_loop_tail_v1_60</task>
                 </dependents>
             </task>
-            <task definition_id="netsuite_generic_soap_api_v1" id="netsuite_generic_soap_api_v1_157" name="Get Updated Calendar Events" x="2623.4607" y="354.64667">
+            <task definition_id="netsuite_generic_soap_api_v1" id="netsuite_generic_soap_api_v1_157" name="Get Updated Calendar Events" x="3964.4606999999996" y="55.64666999999997">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -433,7 +431,7 @@ end_dt = dates['end_date']
                     <task label="No Results" type="Complete" value="JSON.parse(@results['Get Updated Calendar Events']['Output'])['search_response']['search_result']['total_records'].to_i == 0">system_noop_v1_162</task>
                 </dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_158" name="Echo Saved Event Search" x="2192.4607" y="252.14667">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_158" name="Echo Saved Event Search" x="3675.4607" y="55.14666999999997">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -447,7 +445,7 @@ end_dt = dates['end_date']
                     <task label="" type="Complete" value="">netsuite_generic_soap_api_v1_157</task>
                 </dependents>
             </task>
-            <task definition_id="routine_create_or_update_calendar_events_loop" id="routine_create_or_update_calendar_events_loop_161" name="Create or Update Calendar Events in Loop" x="3023.4607" y="361.64667">
+            <task definition_id="routine_create_or_update_calendar_events_loop" id="routine_create_or_update_calendar_events_loop_161" name="Create or Update Calendar Events in Loop" x="4324.4607" y="57.64666999999997">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>true</defers>
@@ -458,10 +456,10 @@ end_dt = dates['end_date']
                 </parameters>
                 <messages></messages>
                 <dependents>
-                    <task label="" type="Complete" value="">system_junction_v1_144</task>
+                    <task label="" type="Complete" value="">system_junction_v1_163</task>
                 </dependents>
             </task>
-            <task definition_id="system_noop_v1" id="system_noop_v1_162" name="No Calendar Events Found" x="3019.4607" y="498.64667">
+            <task definition_id="system_noop_v1" id="system_noop_v1_162" name="No Calendar Events Found" x="4316.4607" y="152.64666999999997">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
@@ -470,7 +468,22 @@ end_dt = dates['end_date']
                 <parameters></parameters>
                 <messages></messages>
                 <dependents>
-                    <task label="" type="Complete" value="">system_junction_v1_144</task>
+                    <task label="" type="Complete" value="">system_junction_v1_163</task>
+                </dependents>
+            </task>
+            <task definition_id="system_junction_v1" id="system_junction_v1_163" name="Calendar Event Junction" x="4621.1038" y="65.05628000000002">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages>
+                    <message type="Complete"></message>
+                </messages>
+                <dependents>
+                    <task label="continue" type="Complete" value="JSON.parse(@results['Determine Date Range']['output'])['next_action'] == &quot;continue&quot;">routine_import_opportunities_and_schedules_120</task>
+                    <task label="end" type="Complete" value="JSON.parse(@results['Determine Date Range']['output'])['next_action'] == &quot;end&quot;">system_join_v1_124</task>
                 </dependents>
             </task>
         </request>
