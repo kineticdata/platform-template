@@ -288,7 +288,7 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['sp
     }    
     $space_sdk.write_object_to_file("#{$core_path}/space/userAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
     
-    # Export User Attributes
+    # Export User Profile Attributes
     $logger.info "Exporting \"User Profile Attributes\" for space"    
     attributes_array = []
     (vars['options']['EXPORT']['space']['attributes']['user_profile'] || []).compact.each{ | attribute |
@@ -345,7 +345,6 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
         export = $space_sdk.export_form(kapp['kapp_slug'], form['form_slug']) # Export the form
         $space_sdk.write_object_to_file("#{forms_path}/#{form['form_slug']}.json", export.content['form']) if export.status == 200
         # Export Submissions
-$logger.info "######################{form}"
         if form['submissions'] && form['submissions'] == true 
           export_obj = {"kappSlug"=>kapp['kapp_slug'],"formSlug"=>form['form_slug']}
           export_submissions(export_obj) # Export Submissions
@@ -392,7 +391,29 @@ $logger.info "######################{form}"
       categories_array << export.content['category']
     }    
     $space_sdk.write_object_to_file("#{kapp_path}/categories.json", categories_array) unless categories_array.length == 0
+
+    # Export WebAPIs
+    $logger.info "Exporting \"WebAPIs\" for the #{kapp['kapp_slug']} kapp"    
+    webapis_array = []
+    (kapp['webapis'] || []).compact.each{ | webapi_slug |
+      $logger.info (kapp['kapp_slug'])
+      export = $space_sdk.find_kapp_webapi(kapp['kapp_slug'], webapi_slug, {"include":"securityPolicies"})
+      $logger.info export.content
+      webapis_array << export.content['webApi']
+    }    
+    $space_sdk.write_object_to_file("#{kapp_path}/webapis.json", webapis_array) unless webapis_array.length == 0
+
+	# Export Security Policies
+    $logger.info "Exporting \"Security Policies\" for the #{kapp['kapp_slug']} kapp"    
+    securitypolicy_array = []
+    (kapp['securitypolicy'] || []).compact.each{ | name |
+      $logger.info (kapp['kapp_slug']) 
+      export = $space_sdk.find_security_policy_definition(kapp['kapp_slug'], name)
+      securitypolicy_array << export.content['securityPolicyDefinition']
+    }    
+    $space_sdk.write_object_to_file("#{kapp_path}/securitypolicy.json", securitypolicy_array) unless securitypolicy_array.length == 0
   }
+  
 end
 
 # ------------------------------------------------------------------------------
