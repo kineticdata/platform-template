@@ -9,65 +9,67 @@ core:
 options:
   EXPORT:
     space:
-      teams: 
+      teams:
         # List Team Names
         # Use "include_membership: true" to export the team membership
         - team_name: #team_name
           include_membership: #{true:false}
       attributes:
         space: # List of Space Attributes
-          - #space_attribute
-        user:  # List of User Attributes
-          - #user_attribute
+          -  #space_attribute
+        user: # List of User Attributes
+          -  #user_attribute
         user_profile: # List of User Profile Attributes
-          - #user_profile_attribute
-        team: # List of Team Attributes 
-           - #team_attribute
+          -  #user_profile_attribute
+        team: # List of Team Attributes
+          -  #team_attribute
       models: # List of Models
-        - #model_name
+        -  #model_name
     kapps: # List Kapp Slugs
       # For "datastore" logic will determine if form consolidation is used by looking for the "datastore" kapp
-      - kapp_slug: # Kapp Slug 
+      - kapp_slug: services #kapp_slug
         forms: # list form slugs
           - form_slug: #form_slug
             submissions: #{true:false}
-      - kapp_slug: services
-        forms: # list form slugs
           - form_slug: #form_slug
             submissions: #{true:false}
+        webapis:
+          -  #webapi_slug
+        attributes:
+          kapp_attributes: # Kapp Attributes
+            -  #kapp_attribute
+          category_attributes: # Category Attributes
+            -  #category_attribute
+          form_attributes: # Form Attributes
+            -  #form_attribute
         categories: # Category Slugs
-          - #category_slug
-        attributes: 
-            kapp_attributes: # Kapp Attributes
-                - #kapp_attribute
-            category_attributes: # Category Attributes
-                - #category_attribute
-            form_attributes: # Form Attributes
-                - #form_attribute
+          -  #category_slug
+        securitypolicy:
+          -  #name
     workflow:
       trees: #List of Trees
         # list each using - 'Source :: Source Group :: Name'
         # example: - 'Kinetic Request CE :: Submissions > services > gravel-roads :: Closed'
-        - #'Source :: Source Group :: Name'
+        -  #'Source :: Source Group :: Name'
       routines: #List of Routines
         # list each using - 'Source :: Source Group :: Name'
         # example: - '- :: - :: Name'
-        - #- :: - :: Name
+        -  #- :: - :: Name
       handlers: #List of Handlers
-        - #Handler_Definition_Id
+        -  #Handler_Definition_Id
   REMOVE_DATA_PROPERTIES: # Properties to remove from exported submissions
-  - createdAt
-  - createdBy
-  - updatedAt
-  - updatedBy
-  - closedAt
-  - closedBy
-  - submittedAt
-  - submittedBy
-  - id
-  - authStrategy
-  - key
-  - handle        
+    - createdAt
+    - createdBy
+    - updatedAt
+    - updatedBy
+    - closedAt
+    - closedBy
+    - submittedAt
+    - submittedBy
+    - id
+    - authStrategy
+    - key
+    - handle
 task:
   # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic-task
   server_url: https://web-server.com
