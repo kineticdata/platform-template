@@ -215,10 +215,9 @@
                 <messages></messages>
                 <dependents>
                     <task label="" type="Complete" value="">routine_add_modify_calendar_event_9</task>
-                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_21</task>
                 </dependents>
             </task>
-            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_21" name="Get Test Schedule" x="880" y="416">
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_21" name="Get Test Schedule" x="791" y="414">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>true</defers>
@@ -242,7 +241,7 @@
                     <task label="" type="Complete" value="">utilities_echo_v1_22</task>
                 </dependents>
             </task>
-            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_22" name="Update Calendar Data with Title" x="840" y="606">
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_22" name="Update Calendar Data with Title" x="1050" y="415">
                 <version>1</version>
                 <configured>true</configured>
                 <defers>false</defers>
