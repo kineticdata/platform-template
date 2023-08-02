@@ -1,0 +1,491 @@
+<tree schema_version="1.0">
+    <sourceName>-</sourceName>
+    <sourceGroup>-</sourceGroup>
+    <definitionId>routine_import_opportunities_and_schedules</definitionId>
+    <type>Global Routine</type>
+    <status>Active</status>
+    <taskTree builder_version="" schema_version="1.0" version="">
+        <name>Import Opportunities and Schedules</name>
+        <author>brian.peterson@kineticdata.com</author>
+        <notes></notes>
+        <lastID>163</lastID>
+        <taskDefinition id="routine_import_opportunities_and_schedules" name="Import Opportunities and Schedules" schema_version="1.0" version="1">
+            <visible>false</visible>
+            <deferrable>true</deferrable>
+            <parameters>
+                <parameter id="Date Inputs" label="Date Inputs" required="true" tooltip="json"></parameter>
+            </parameters>
+            <handler name="system_tree_call" version="1"></handler>
+            <results format="xml">
+                <result name="Date Outputs" tooltip="json"></result>
+            </results>
+        </taskDefinition>
+        <request>
+            <task definition_id="system_start_v1" id="start" name="Start" x="75" y="51">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_kinetic_space_retrieve_v1_135</task>
+                </dependents>
+            </task>
+            <task definition_id="system_loop_head_v1" id="system_loop_head_v1_58" name="Loop Head" x="1168" y="54">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="data_source" label="Data Source:" menu="" required="true" tooltip="The source that contains the data to use to create each task in the loop.">&lt;%= 
+# The loop needs an array to process
+# Values from NS could be a Hash in case of 1 record or an array in case of many records. 
+# If a Hash, wrap it in an array just as if multiple records were returned
+opportunities = JSON.parse(@results['Get Updated Opportunities']['Output'])
+
+if !opportunities.empty?
+  record_list = opportunities['search_response']['search_result']['record_list']
+  record = !record_list.nil? ? record_list['record'] : [] 
+  output = record.class == Hash ? [record] : record
+else
+  output = []
+end  
+  
+output.to_json
+%&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="loop_path" label="Loop Path:" menu="" required="true" tooltip="The XPath or JSONPath statement to indicate what data records to process.">$[*]</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="var_name" label="Variable Name:" menu="" required="false" tooltip="The local variable name used to represent the data used in loop tasks."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_loop_tail_v1_60</task>
+                    <task label="" type="Complete" value="">routine_create_or_update_opportunities_155</task>
+                </dependents>
+            </task>
+            <task definition_id="system_loop_tail_v1" id="system_loop_tail_v1_60" name="Loop Tail" x="1608" y="54.666668">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="type" label="Type:" menu="All,Some,Any" required="true" tooltip="How many loop processes must be completed before continuing?">All</parameter>
+                    <parameter dependsOnId="type" dependsOnValue="Some" id="number" label="Number:" menu="" required="false" tooltip="If some, how many?"></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_kinetic_submissions_retrieve_list_v1_102</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_submissions_retrieve_list_v1" id="routine_kinetic_submissions_retrieve_list_v1_102" name="Retrieve All Rooms" x="1880.4607" y="53.646675">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Kapp Slug" label="Kapp Slug" menu="" required="true" tooltip="The slug of the Kapp to find submissions in.">calendar</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Slug" label="Form Slug" menu="" required="false" tooltip="The slug of the Form to find submissions in. If none provided, can only use Kapp Fields in search query">rooms</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Form Type" label="Form Type" menu="" required="false" tooltip="The Type of Form to find submissions in."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Core State" label="Core State" menu="" required="false" tooltip="Searches for submissions that have a core state that matches this parameter. If no value is provided, the results will contain submissions in all core states."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Limit" label="Limit" menu="" required="false" tooltip="Limit the number of results returned. If not provided, the server will limit the results to 25 submissions. Maximum limit 1000">1000</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Query" label="Query" menu="" required="false" tooltip="Query to use to fetch submissions. (i.e values[First Name]=&quot;Fred&quot;)"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Timeline" label="Timeline" menu="" required="false" tooltip="Date property to search by. The default value is createdAt."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Direction" label="Direction" menu="" required="false" tooltip="Result Set sorting direction. The default value is descending."></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Start Date/Time" label="Start Date/Time" menu="" required="false" tooltip="Start date/time of the timeline. This value should be used to both refine and limit the search results. Format should be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="End Date/Time" label="End Date/Time" menu="" required="false" tooltip="End date/time of the timeline. This value should be used to both refine and limit the search results. Formatshould be yyyy-MM-dd'T'HH:mm:ss'Z'"></parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Next Page Token" label="Next Page Token" menu="" required="false" tooltip="The value to use as the offset for the page of submissions to return. The submission that matches this value will not be included in the results."></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_103</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_103" name="Consolidate Room Locations" x="2113.7246" y="55.57308">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%=
+rooms = JSON.parse(@results['Retrieve All Rooms']['Submissions List JSON'])
+rooms.map{ |room|
+  {room['values']['Room Id NetSuite'] =&gt; 
+    {
+    "Location Id" =&gt; room['values']['Location Id'],
+    "Room Id" =&gt; room['values']['Room Id']
+    }
+  }
+}.to_json
+
+
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_136</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_117" name="Determine Date Range" x="623.44446" y="54.11111">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= 
+input_dates = JSON.parse(@inputs['Date Inputs'])
+start_date = DateTime.parse(input_dates['start_date'])
+
+# Chunk by adding days
+end_date = DateTime.parse(input_dates['end_date'])
+date_chunk_end = DateTime.parse(input_dates['start_date']) + 1
+
+#Chunk by adding min or hours
+#date_chunk_end = Time.parse(input_dates['start_date']) +  6*60*60 #Add 6 Hours
+#end_date = Time.parse(input_dates['end_date'])
+
+if date_chunk_end &gt; end_date 
+  {
+   'next_action' =&gt; "end",
+   'start_date' =&gt; start_date.strftime("%FT%T.%3N-00:00"),
+   'end_date' =&gt; end_date.strftime("%FT%T.%3N-00:00") 
+  }.to_json
+else
+ {
+   'next_action' =&gt; "continue",
+   'start_date' =&gt; start_date.strftime("%FT%T.%3N-00:00"),
+   'end_date' =&gt; date_chunk_end.strftime("%FT%T.%3N-00:00") 
+  }.to_json
+end
+ %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">netsuite_generic_soap_api_v1_148</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_import_opportunities_and_schedules" id="routine_import_opportunities_and_schedules_120" name="Rerun Next Date Chunk" x="4903.0117" y="151.26315">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Date Inputs" label="Date Inputs" menu="" required="true" tooltip="json">&lt;%= 
+
+date_range = JSON.parse(@results['Determine Date Range']['output'])
+{
+"start_date" =&gt; DateTime.parse(date_range['end_date']),
+"end_date" =&gt; DateTime.parse(JSON.parse(@inputs['Date Inputs'])['end_date']),
+}.to_json
+ %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_join_v1_124</task>
+                </dependents>
+            </task>
+            <task definition_id="system_tree_return_v1" id="system_tree_return_v1_122" name="Return" x="5500.7603" y="56.07602299999999">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Date Outputs" label="Date Outputs" menu="" required="false" tooltip="json"></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents></dependents>
+            </task>
+            <task definition_id="system_join_v1" id="system_join_v1_124" name="Join Finish" x="5175.344999999999" y="66.929825">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="type" label="Type:" menu="All,Any,Some" required="true" tooltip="How many dependents must be completed before continuing?">Any</parameter>
+                    <parameter dependsOnId="type" dependsOnValue="Some" id="number" label="Number:" menu="" required="false" tooltip="If some, how many?"></parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_tree_return_v1_122</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_kinetic_space_retrieve_v1" id="routine_kinetic_space_retrieve_v1_135" name="Retrieve Space" x="308.8572" y="54.95238">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_117</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_136" name="Echo Saved Search Id" x="2311.8572" y="60.95238">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= JSON.parse(@results['Retrieve Space']['Attributes Map JSON'])["NetSuite Test Schedule Saved Search Id"][0] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">netsuite_generic_soap_api_v1_150</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_create_or_update_schedules" id="routine_create_or_update_schedules_141" name="Create or Update Schedules" x="3146.1038" y="54.05627">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Updated Schedules JSON" label="Updated Schedules JSON" menu="" required="true" tooltip="JSON of updated Schedules">&lt;%= @results['Chunk Schedules']['output'] %&gt;</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="Rooms Array" label="Rooms Array" menu="" required="true" tooltip="Array of Room Definitions">&lt;%= @results['Consolidate Room Locations']['output'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_144</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_142" name="Chunk Schedules" x="2919.8572" y="57.95238">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= 
+chunck_size = 25
+# The result values need to be consistently in an array
+# Values from NS could be a Hash in case of 1 record or an array in case of many records. 
+# If a Hash, wrap it in an array just as if multiple records were returned
+
+json= JSON.parse(@results['Get Updated Schedules']['Output'])['search_response']['search_result']['search_row_list']['search_row']
+rows = json.class == Hash ? [json] : json
+new_arr = rows.each_slice(chunck_size).to_a
+new_arr.to_json
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">routine_create_or_update_schedules_141</task>
+                </dependents>
+            </task>
+            <task definition_id="system_junction_v1" id="system_junction_v1_144" name="Junction Schedules" x="3392.1038" y="64.05628">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">utilities_echo_v1_158</task>
+                </dependents>
+            </task>
+            <task definition_id="system_noop_v1" id="system_noop_v1_145" name="No Schedules Found" x="3026.4805" y="151.50433">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_144</task>
+                </dependents>
+            </task>
+            <task definition_id="netsuite_generic_soap_api_v1" id="netsuite_generic_soap_api_v1_148" name="Get Updated Opportunities" x="874.6141" y="51.859646">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="error_handling" label="Error Handling" menu="Error Message,Raise Error" required="true" tooltip="Determine what to return if an error is encountered.">Error Message</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="output_type" label="Output Type" menu="JSON,XML" required="false" tooltip="The output type to return from a successful call.">JSON</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="operation" label="Operation" menu="" required="true" tooltip="Must match the operation that the body is requesting">search</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="body" label="Body" menu="" required="false" tooltip="JSON payload that is converted to xml and will the be body of the request">&lt;%=
+dates = JSON.parse(@results['Determine Date Range']['output'])
+start_dt = dates['start_date']
+end_dt = dates['end_date']
+{
+  "platformMsgs:searchRecord"=&gt; {
+    "@xsi:type"=&gt; "tranSales:OpportunitySearch",
+    "tranSales:basic"=&gt; {
+      "platformCommon:lastModifiedDate"=&gt; {
+        "@operator"=&gt; "within",
+        "platformCore:searchValue"=&gt; start_dt,
+        "platformCore:searchValue2"=&gt; end_dt
+      }
+    }
+  }
+}.to_json
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_loop_head_v1_58</task>
+                </dependents>
+            </task>
+            <task definition_id="netsuite_generic_soap_api_v1" id="netsuite_generic_soap_api_v1_150" name="Get Updated Schedules" x="2541.8572" y="60.95238">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="error_handling" label="Error Handling" menu="Error Message,Raise Error" required="true" tooltip="Determine what to return if an error is encountered.">Error Message</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="output_type" label="Output Type" menu="JSON,XML" required="false" tooltip="The output type to return from a successful call.">JSON</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="operation" label="Operation" menu="" required="true" tooltip="Must match the operation that the body is requesting">search</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="body" label="Body" menu="" required="false" tooltip="JSON payload that is converted to xml and will the be body of the request">&lt;%=
+dates = JSON.parse(@results['Determine Date Range']['output'])
+start_dt = dates['start_date']
+end_dt = dates['end_date']
+{
+  "platformMsgs:searchRecord"=&gt; {
+    "@savedSearchId"=&gt; @results['Echo Saved Search Id']['output'],
+    "@xsi:type"=&gt; "setupCustom:CustomRecordSearchAdvanced",
+    "setupCustom:criteria"=&gt; {
+      "setupCustom:basic"=&gt; {
+        "platformCommon:lastModified"=&gt; {
+          "@operator"=&gt; "within",
+          "platformCore:searchValue"=&gt; start_dt,
+          "platformCore:searchValue2"=&gt; end_dt
+        },
+        "platformCommon:recType"=&gt; {
+          "@internalId"=&gt; 219
+        }
+      }
+    }
+  }
+}.to_json
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Schedules" type="Complete" value="JSON.parse(@results['Get Updated Schedules']['Output'])['search_response']['search_result']['total_records'].to_i &gt; 0">utilities_echo_v1_142</task>
+                    <task label="No Schedules" type="Complete" value="JSON.parse(@results['Get Updated Schedules']['Output'])['search_response']['search_result']['total_records'].to_i == 0">system_noop_v1_145</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_create_or_update_opportunities" id="routine_create_or_update_opportunities_155" name="Create or Update Opportunities" x="1385" y="149.66667">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Opportunity JSON" label="Opportunity JSON" menu="" required="true" tooltip="JSON from the Opportunity">&lt;%= @results['Loop Head']['Value'] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_loop_tail_v1_60</task>
+                </dependents>
+            </task>
+            <task definition_id="netsuite_generic_soap_api_v1" id="netsuite_generic_soap_api_v1_157" name="Get Updated Calendar Events" x="3964.4606999999996" y="55.64666999999997">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="error_handling" label="Error Handling" menu="Error Message,Raise Error" required="true" tooltip="Determine what to return if an error is encountered.">Error Message</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="output_type" label="Output Type" menu="JSON,XML" required="false" tooltip="The output type to return from a successful call.">JSON</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="operation" label="Operation" menu="" required="true" tooltip="Must match the operation that the body is requesting">search</parameter>
+                    <parameter dependsOnId="" dependsOnValue="" id="body" label="Body" menu="" required="false" tooltip="JSON payload that is converted to xml and will the be body of the request">&lt;%=
+dates = JSON.parse(@results['Determine Date Range']['output'])
+start_dt = dates['start_date']
+end_dt = dates['end_date']
+{
+      "platformMsgs:SearchRequest"=&gt;{
+        "@savedSearchId"=&gt; @results['Echo Saved Event Search']['output'],      
+        #"@savedSearchScriptId"=&gt;@results['Echo Saved Event Search']['output'],
+        "@xsi:type"=&gt;"actSched:CalendarEventSearchAdvanced",
+        "actSched:criteria"=&gt;{
+          "actSched:basic"=&gt;{
+            "platformCommon:lastModifiedDate"=&gt;{
+              "@operator"=&gt;"within",
+              "platformCore:searchValue"=&gt;start_dt,
+              "platformCore:searchValue2"=&gt;end_dt
+            }
+          }
+        }
+      }
+    }.to_json     
+%&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="Results" type="Complete" value="JSON.parse(@results['Get Updated Calendar Events']['Output'])['search_response']['search_result']['total_records'].to_i &gt; 0">routine_create_or_update_calendar_events_loop_161</task>
+                    <task label="No Results" type="Complete" value="JSON.parse(@results['Get Updated Calendar Events']['Output'])['search_response']['search_result']['total_records'].to_i == 0">system_noop_v1_162</task>
+                </dependents>
+            </task>
+            <task definition_id="utilities_echo_v1" id="utilities_echo_v1_158" name="Echo Saved Event Search" x="3675.4607" y="55.14666999999997">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="input" label="Input" menu="" required="true" tooltip="">&lt;%= JSON.parse(@results['Retrieve Space']['Attributes Map JSON'])["NetSuite Calendar Event Saved Search Id"][0] %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">netsuite_generic_soap_api_v1_157</task>
+                </dependents>
+            </task>
+            <task definition_id="routine_create_or_update_calendar_events_loop" id="routine_create_or_update_calendar_events_loop_161" name="Create or Update Calendar Events in Loop" x="4324.4607" y="57.64666999999997">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>true</defers>
+                <deferrable>true</deferrable>
+                <visible>false</visible>
+                <parameters>
+                    <parameter dependsOnId="" dependsOnValue="" id="Calendar Event JSON" label="Calendar Event JSON" menu="" required="true" tooltip="">&lt;%= JSON.parse(@results['Get Updated Calendar Events']['Output'])['search_response']['search_result']['search_row_list']['search_row'].to_json %&gt;</parameter>
+                </parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_163</task>
+                </dependents>
+            </task>
+            <task definition_id="system_noop_v1" id="system_noop_v1_162" name="No Calendar Events Found" x="4316.4607" y="152.64666999999997">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>true</visible>
+                <parameters></parameters>
+                <messages></messages>
+                <dependents>
+                    <task label="" type="Complete" value="">system_junction_v1_163</task>
+                </dependents>
+            </task>
+            <task definition_id="system_junction_v1" id="system_junction_v1_163" name="Calendar Event Junction" x="4621.1038" y="65.05628000000002">
+                <version>1</version>
+                <configured>true</configured>
+                <defers>false</defers>
+                <deferrable>false</deferrable>
+                <visible>false</visible>
+                <parameters></parameters>
+                <messages>
+                    <message type="Complete"></message>
+                </messages>
+                <dependents>
+                    <task label="continue" type="Complete" value="JSON.parse(@results['Determine Date Range']['output'])['next_action'] == &quot;continue&quot;">routine_import_opportunities_and_schedules_120</task>
+                    <task label="end" type="Complete" value="JSON.parse(@results['Determine Date Range']['output'])['next_action'] == &quot;end&quot;">system_join_v1_124</task>
+                </dependents>
+            </task>
+        </request>
+    </taskTree>
+</tree>
