@@ -392,7 +392,29 @@ $logger.info "######################{form}"
       categories_array << export.content['category']
     }    
     $space_sdk.write_object_to_file("#{kapp_path}/categories.json", categories_array) unless categories_array.length == 0
+
+    # Export WebAPIs
+    $logger.info "Exporting \"WebAPIs\" for the #{kapp['kapp_slug']} kapp"    
+    webapis_array = []
+    (kapp['webapis'] || []).compact.each{ | webapi_slug |
+      $logger.info (kapp['kapp_slug'])
+      export = $space_sdk.find_kapp_webapi(kapp['kapp_slug'], webapi_slug, {"include":"securityPolicies"})
+      $logger.info export.content
+      webapis_array << export.content['webApi']
+    }    
+    $space_sdk.write_object_to_file("#{kapp_path}/webapis.json", webapis_array) unless webapis_array.length == 0
+
+	# Export Security Policies
+    $logger.info "Exporting \"Security Policies\" for the #{kapp['kapp_slug']} kapp"    
+    securitypolicy_array = []
+    (kapp['securitypolicy'] || []).compact.each{ | name |
+      $logger.info (kapp['kapp_slug']) 
+      export = $space_sdk.find_security_policy_definition(kapp['kapp_slug'], name)
+      securitypolicy_array << export.content['securityPolicyDefinition']
+    }    
+    $space_sdk.write_object_to_file("#{kapp_path}/securitypolicy.json", securitypolicy_array) unless securitypolicy_array.length == 0
   }
+  
 end
 
 # ------------------------------------------------------------------------------
