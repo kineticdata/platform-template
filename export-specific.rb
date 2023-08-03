@@ -288,7 +288,7 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['sp
     }    
     $space_sdk.write_object_to_file("#{$core_path}/space/userAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
     
-    # Export User Attributes
+    # Export User Profile Attributes
     $logger.info "Exporting \"User Profile Attributes\" for space"    
     attributes_array = []
     (vars['options']['EXPORT']['space']['attributes']['user_profile'] || []).compact.each{ | attribute |
