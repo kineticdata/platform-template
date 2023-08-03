@@ -401,7 +401,7 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
     }    
    
 
-	# Export Security Policies
+    # Export Security Policies
     $logger.info "Exporting \"Security Policies\" for the #{kapp['kapp_slug']} kapp"    
     securitypolicy_array = []
     (kapp['securitypolicy'] || []).compact.each{ | name |
