@@ -44,6 +44,7 @@ require 'rexml/document'
 require 'optparse'
 require 'kinetic_sdk'
 include REXML
+require 'find'
 
 template_name = "platform-template"
 

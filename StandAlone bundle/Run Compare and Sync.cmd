@@ -1,0 +1,1 @@
+Powershell.exe -ExecutionPolicy Bypass -command ".\Compare_and_sync_spaces.ps1"
