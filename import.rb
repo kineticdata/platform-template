@@ -522,7 +522,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     # Delete Kapp Category Definitions
     # ------------------------------------------------------------------------------
     destinationKappAttributeArray.each { | attribute |
-      if !sourceKappCategoryArray.include?(attribute)
+      if vars["options"]["delete"] && !sourceKappCategoryArray.include?(attribute)
           space_sdk.delete_category_attribute_definition(kapp['slug'],attribute)
       end
     }
@@ -621,7 +621,7 @@ Dir["#{core_path}/space/kapps/*"].each { |file|
     # ------------------------------------------------------------------------------
      
     destinationCategoryArray.each { | attribute |
-      if !sourceCategoryArray.include?(attribute)
+      if vars["options"]["delete"] && !sourceCategoryArray.include?(attribute)
           space_sdk.delete_category_on_kapp(kapp['slug'],attribute)
       end
     }
