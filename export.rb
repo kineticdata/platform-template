@@ -295,6 +295,7 @@ task_sdk.export_categories()
 task_sdk.export_access_keys()
 
 # Export workflows as these are not the same as Trees and Routines
+logger.info "Exporting workflows"
 space_sdk.export_workflows()
 
 # ------------------------------------------------------------------------------
