@@ -49,9 +49,6 @@ require 'json'
 require 'optparse'
 require 'kinetic_sdk'
 
-# Add workflows script
-require File.join(File.expand_path(File.dirname(__FILE__)), "workflows.rb")
-
 template_name = "platform-template"
 
 logger = Logger.new(STDERR)
@@ -195,6 +192,7 @@ end
 # export submissions
 logger.info "Exporting and writing submission data"
 (SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
+  is_datastore = item["datastore"] || false
   logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
   submission_path = is_datastore ?
@@ -296,7 +294,7 @@ task_sdk.export_categories()
 task_sdk.export_access_keys()
 
 # Export workflows as these are not the same as Trees and Routines
-export_workflows(core_path, space_sdk, task_sdk)
+space_sdk.export_workflows()
 
 # ------------------------------------------------------------------------------
 # complete
