@@ -43,9 +43,6 @@ require 'optparse'
 require 'kinetic_sdk'
 include REXML
 
-# Add workflows script
-require File.join(File.expand_path(File.dirname(__FILE__)), "workflows.rb")
-
 template_name = "platform-template"
 
 logger = Logger.new(STDERR)
@@ -896,11 +893,11 @@ destinationtrees.each { | tree |
 }
 
 # Import v6 workflows as these are not not the same as Trees and Routines
-import_workflows(core_path, space_sdk)
+logger.info "Importing workflows"
+space_sdk.import_workflows(vars["core"]["space_slug"])
 
 # ------------------------------------------------------------------------------
 # complete
 # ------------------------------------------------------------------------------
 
 logger.info "Finished importing the \"#{template_name}\" forms."
- 
