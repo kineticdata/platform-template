@@ -199,7 +199,7 @@ logger.info "Exporting and writing submission data"
     "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
     "#{core_path}/space/kapps/#{item['kappSlug']}/forms/#{item['formSlug']}"
   
-    # get attachment fields from form definition
+  # get attachment fields from form definition
   attachment_form = is_datastore ?
     space_sdk.find_datastore_form(item['formSlug'], {"include" => "fields.details"}) :
     space_sdk.find_form(item['kappSlug'], item['formSlug'], {"include" => "fields.details"})
