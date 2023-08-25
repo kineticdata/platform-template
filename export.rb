@@ -196,7 +196,7 @@ end
 
 # export submissions
 logger.info "Exporting and writing submission data"
-(SUBMISSIONS_TO_EXPORT || []).each do |item|
+(SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
   is_datastore = item["datastore"] || false
   logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
@@ -302,7 +302,8 @@ task_sdk.export_policy_rules()
 task_sdk.export_categories()
 task_sdk.export_access_keys()
 
-
+# Export workflows as these are not the same as Trees and Routines
+space_sdk.export_workflows()
 
 # ------------------------------------------------------------------------------
 # complete
