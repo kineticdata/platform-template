@@ -892,6 +892,10 @@ destinationtrees.each { | tree |
   end
 }
 
+# Import v6 workflows as these are not not the same as Trees and Routines
+logger.info "Importing workflows"
+space_sdk.import_workflows(vars["core"]["space_slug"])
+
 # ------------------------------------------------------------------------------
 # complete
 # ------------------------------------------------------------------------------
