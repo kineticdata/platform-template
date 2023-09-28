@@ -91,7 +91,7 @@ end
 
 
 # Determine the Present Working Directory
-pwd = File.expand_path(File.dirname(__FILE__))
+$pwd = File.expand_path(File.dirname(__FILE__))
 
 ARGV << '-h' if ARGV.empty?
 
@@ -128,6 +128,50 @@ def create_valid_filename(filename)
   # Replace all `::` with `-` (this ensures nested Teams/Categories maintain a separator)
   # Replace all non-slug characters with ``
   updated_filename = "#{filename.gsub(/(\/)|(\\)/, '-').gsub(/\s{2,}/, ' ').gsub('.', '/').gsub(/::/, '-').gsub(/[^ a-zA-Z0-9_\-\/]/, '')}.json"
+end
+
+def export_workflow(args)
+  if !args['kapp'].nil? && !args['form'].nil? # kapp and form provided
+    type = "form"
+    workflows = $space_sdk.find_form_workflows(args['kapp'],args['form']).content # Find all Form Workflows
+  elsif !args['kapp'].nil? && args['form'].nil? # kapp provide
+    type = "kapp"
+    workflows = $space_sdk.find_kapp_workflows(args['kapp']).content # Find all Kapp Workflows
+  else # nothing provided
+    type = "space"
+    workflows = $space_sdk.find_space_workflows().content # Find all Space Workflows
+  end 
+
+  # Select Workflows that match the name or event in the configuration
+  export_workflows = workflows['workflows'].select { |workflow| !workflow['event'].nil? && (args['workflows'].include?(workflow['event']) || args['workflows'].include?(workflow['name'])) }
+  
+  # Iterate through each workflow and export
+  export_workflows.each { |workflow|
+    evt = workflow["event"].slugify
+    name = workflow["name"].slugify
+
+    # Build Logging Message
+    message = "Exporting Workflow #{name} | #{evt}" 
+    message << " on the Space" if type == "space"
+    message << " for the \"#{args['form']}\" Form" if type == "form"
+    message <<  " on the \"#{args['kapp']}\" Kapp" if type == "kapp"
+    $logger.info message
+    #"Exporting #{name} | #{evt} #{"for the" form['form_slug'] if form['form_slug']} #{on the kapp['kapp_slug']} Kapp."
+    
+    # Build Filename
+    filename = "#{File.join($pwd, "core", "space")}"
+    filename = "#{File.join(filename, "kapps", args['kapp'])}" if type == "kapp" || type == "form"
+    filename = "#{File.join(filename, "forms", args['form'])}" if type == "form"
+    filename = "#{File.join(filename, "workflows", evt, name)}.json"
+
+    # Export Workflows
+    workflow_json = $space_sdk.find_space_workflow(workflow["id"], {}).content["treeJson"] if type == "space"
+    workflow_json = $space_sdk.find_kapp_workflow(args['kapp'], workflow["id"], {}).content["treeJson"] if type == "kapp"
+    workflow_json = $space_sdk.find_form_workflow(args['kapp'], args['form'], workflow["id"], {}).content["treeJson"] if type == "form"
+
+    # Write File
+    $space_sdk.write_object_to_file(filename, workflow_json)
+  }
 end
 
 def export_submissions(item)
@@ -265,6 +309,12 @@ $form_consoldidation = $space_sdk.get("#{vars["core"]["server_url"]}/app/api/v1/
 # ------------------------------------------------------------------------------
 if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['space']
   
+  # Export Space Workflows
+  if vars['options']['EXPORT']['space']['space_workflows']
+    $logger.info "Exporting Space \"Workflows\"."
+    export_workflow ({"workflows" => vars['options']['EXPORT']['space']['space_workflows']})
+  end
+
   # Export Teams
   $logger.info "Exporting \"Teams\" for space"
   (vars['options']['EXPORT']['space']['teams'] || []).each{ |team|
@@ -341,20 +391,28 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
     
     # Iterate through each form
     (kapp['forms'] || [] ).each { |form|
-      if form['form_slug']
+      if form['form_slug'] && form['form_definition']
+        $logger.info "Exporting the #{form['form_slug']} form definition on the #{kapp['kapp_slug']} Kapp."
         export = $space_sdk.export_form(kapp['kapp_slug'], form['form_slug']) # Export the form
         $space_sdk.write_object_to_file("#{forms_path}/#{form['form_slug']}.json", export.content['form']) if export.status == 200
-        # Export Submissions
-        if form['submissions'] && form['submissions'] == true 
-          export_obj = {"kappSlug"=>kapp['kapp_slug'],"formSlug"=>form['form_slug']}
-          export_submissions(export_obj) # Export Submissions
-        end
+      end
+
+      # Export Submissions
+      if form['form_slug'] && form['submissions'] 
+        $logger.info "Exporting submisions for the #{form['form_slug']} on the #{kapp['kapp_slug']} Kapp."
+        export_obj = {"kappSlug"=>kapp['kapp_slug'],"formSlug"=>form['form_slug']}
+        export_submissions(export_obj) # Export Submissions
+      end
+      
+      # Export Form Workflow    
+      if form['form_slug'] && form['form_workflows']
+        $logger.info "Exporting Form \"Workflows\" for the #{form['form_slug']} form on the #{kapp['kapp_slug']} Kapp."
+        export_workflow({"kapp" => kapp['kapp_slug'], "form" => form['form_slug'], "workflows" => form['form_workflows']})     
       end
     }
-
+    
     $logger.info "Exporting \"Attributes\" for the #{kapp['kapp_slug']} kapp"
     if kapp['attributes']
-      
       # Export Kapp Attributes
       $logger.info "Exporting \"Kapp Attributes\" for the #{kapp['kapp_slug']} kapp"    
       attributes_array = []
@@ -392,7 +450,7 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
     }    
     $space_sdk.write_object_to_file("#{kapp_path}/categories.json", categories_array) unless categories_array.length == 0
 
-    # Export WebAPIs
+    # Export Kapp WebAPIs
     $logger.info "Exporting \"WebAPIs\" for the #{kapp['kapp_slug']} kapp"    
     webapis_array = []
     (kapp['webapis'] || []).compact.each{ | webapi_slug |
@@ -400,6 +458,11 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['ka
       $space_sdk.write_object_to_file("#{kapp_path}/webApis/#{webapi_slug}.json", export.content['webApi'])
     }    
    
+    #Export Kapp Workflow
+    if kapp['kapp_workflows']
+      $logger.info "Exporting Kapp \"Workflows\" for the #{kapp['kapp_slug']} kapp"   
+      export_workflow({"kapp" => kapp['kapp_slug'], "workflows" => kapp['kapp_workflows']})
+    end
 
     # Export Security Policies
     $logger.info "Exporting \"Security Policies\" for the #{kapp['kapp_slug']} kapp"    

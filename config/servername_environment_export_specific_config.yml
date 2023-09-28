@@ -29,10 +29,12 @@ options:
       # For "datastore" logic will determine if form consolidation is used by looking for the "datastore" kapp
       - kapp_slug: services #kapp_slug
         forms: # list form slugs
-          - form_slug: #form_slug
-            submissions: #{true:false}
-          - form_slug: #form_slug
-            submissions: #{true:false}
+          - form_slug:  # form_slug to export
+            form_definition:  # Export form definition {true:false}
+            submissions:  # Export submissions {true:false}
+            workflows: # # List of workflows. Use workflow event (e.g., 'Submission Submitted') or name of workflow (For version 6+ only)
+              - #workflow_event
+              - #workflow_name 
         webapis:
           -  #webapi_slug
         attributes:
