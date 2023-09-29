@@ -9,6 +9,13 @@ core:
 options:
   EXPORT:
     space:
+      models: # List of Models
+        -  #model_name
+      webapis:
+          -  #webapi_slug
+      space_workflows: # List of Form Workflows. {workflow event (e.g., 'Submission Submitted') OR name of workflow} (For version 6+ only)
+        - #workflow_event
+        - #workflow_name
       teams:
         # List Team Names
         # Use "include_membership: true" to export the team membership
@@ -23,8 +30,7 @@ options:
           -  #user_profile_attribute
         team: # List of Team Attributes
           -  #team_attribute
-      models: # List of Models
-        -  #model_name
+      
     kapps: # List Kapp Slugs
       # For "datastore" logic will determine if form consolidation is used by looking for the "datastore" kapp
       - kapp_slug: services #kapp_slug
@@ -32,11 +38,14 @@ options:
           - form_slug:  # form_slug to export
             form_definition:  # Export form definition {true:false}
             submissions:  # Export submissions {true:false}
-            workflows: # # List of workflows. Use workflow event (e.g., 'Submission Submitted') or name of workflow (For version 6+ only)
+            form_workflows: # List of Form Workflows. {workflow event (e.g., 'Submission Submitted') OR name of workflow} (For version 6+ only)
               - #workflow_event
               - #workflow_name 
         webapis:
-          -  #webapi_slug
+          - #webapi_slug
+        kapp_workflows: # List of Kapp Workflows. {workflow event (e.g., 'Submission Submitted') OR name of workflow} (For version 6+ only)
+          - #workflow_event
+          - #workflow_name
         attributes:
           kapp_attributes: # Kapp Attributes
             -  #kapp_attribute

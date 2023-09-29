@@ -7,7 +7,7 @@
 # 
 =begin yml config file example
 
-  ---
+---
   core:
     # server_url: https://<SPACE>.kinops.io  OR https://<SERVER_NAME>.com/kinetic/<SPACE_SLUG>
     server_url: https://web-server.com
@@ -15,55 +15,81 @@
     space_name: <SPACE_NAME>
     service_user_username: <USER_NAME>
     service_user_password: <PASSWORD>
-options:
-  EXPORT:
-    space:
-      teams: 
-        # List Team Names
-        # Use "include_membership: true" to export the team membership
-        - team_name: <team_name>
-          include_membership: true
-      attributes:
-        space: # List of Space Attributes
-          - <space_attribute>
-        user:  # List of User Attributes
-          - <user_attribute>
-        user_profile: # List of User Profile Attributes
-          - <user_profile_attribute>
-        team: # List of Team Attributes 
-           - <team_attribute>
-      models: # List of Models
-        - <model_name>
-    kapps: # List Kapp Slugs
-      # For "datastore" logic will determine if form consolidation is used by looking for the "datastore" kapp
-      - kapp_slug: datastore 
-        forms: # list form slugs
-          - form_slug: <form_slug>
-            submission: <true/false>
-      - kapp_slug: services
-        forms: # list form slugs
-          - form_slug: <form_slug>
-            submission: <true/false>
-        categories: # Category Slugs
-          - <category_slug>
-        attributes: 
+  options:
+    EXPORT:
+      space:
+        models: # List of Models
+          -  #model_name
+        webapis:
+            -  #webapi_slug
+        space_workflows: # List of Form Workflows. {workflow event (e.g., 'Submission Submitted') OR name of workflow} (For version 6+ only)
+          - #workflow_event
+          - #workflow_name
+        teams:
+          # List Team Names
+          # Use "include_membership: true" to export the team membership
+          - team_name: #team_name
+            include_membership: #{true:false}
+        attributes:
+          space: # List of Space Attributes
+            -  #space_attribute
+          user: # List of User Attributes
+            -  #user_attribute
+          user_profile: # List of User Profile Attributes
+            -  #user_profile_attribute
+          team: # List of Team Attributes
+            -  #team_attribute
+        
+      kapps: # List Kapp Slugs
+        # For "datastore" logic will determine if form consolidation is used by looking for the "datastore" kapp
+        - kapp_slug: services #kapp_slug
+          forms: # list form slugs
+            - form_slug:  # form_slug to export
+              form_definition:  # Export form definition {true:false}
+              submissions:  # Export submissions {true:false}
+              form_workflows: # List of Form Workflows. {workflow event (e.g., 'Submission Submitted') OR name of workflow} (For version 6+ only)
+                - #workflow_event
+                - #workflow_name 
+          webapis:
+            - #webapi_slug
+          kapp_workflows: # List of Kapp Workflows. {workflow event (e.g., 'Submission Submitted') OR name of workflow} (For version 6+ only)
+            - #workflow_event
+            - #workflow_name
+          attributes:
             kapp_attributes: # Kapp Attributes
-                - <kapp_attribute>
+              -  #kapp_attribute
             category_attributes: # Category Attributes
-                - <category_attribute>
+              -  #category_attribute
             form_attributes: # Form Attributes
-                - <form_attribute>
-    workflow:
-      trees: #List of Trees
-        # list each using - 'Source :: Source Group :: Name'
-        # example: - 'Kinetic Request CE :: Submissions > services > gravel-roads :: Closed'
-        - <'Source :: Source Group :: Name'>
-      routines: List of Routines
-        # list each using - 'Source :: Source Group :: Name'
-        # example: - '- :: - :: Name'
-        - <'- :: - :: Name'>
-      handlers: #List of Handlers
-        - <Handler_Definition_Id>
+              -  #form_attribute
+          categories: # Category Slugs
+            -  #category_slug
+          securitypolicy:
+            -  #name
+      workflow:
+        trees: #List of Trees
+          # list each using - 'Source :: Source Group :: Name'
+          # example: - 'Kinetic Request CE :: Submissions > services > gravel-roads :: Closed'
+          -  #'Source :: Source Group :: Name'
+        routines: #List of Routines
+          # list each using - 'Source :: Source Group :: Name'
+          # example: - '- :: - :: Name'
+          -  #- :: - :: Name
+        handlers: #List of Handlers
+          -  #Handler_Definition_Id
+    REMOVE_DATA_PROPERTIES: # Properties to remove from exported submissions
+      - createdAt
+      - createdBy
+      - updatedAt
+      - updatedBy
+      - closedAt
+      - closedBy
+      - submittedAt
+      - submittedBy
+      - id
+      - authStrategy
+      - key
+      - handle
   task:
     # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic-task
     server_url: https://web-server.com
@@ -72,7 +98,6 @@ options:
   http_options:
     log_level: info
     log_output: stderr
-
 =end
 
 require 'logger'
@@ -309,6 +334,22 @@ $form_consoldidation = $space_sdk.get("#{vars["core"]["server_url"]}/app/api/v1/
 # ------------------------------------------------------------------------------
 if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['space']
   
+  # Export Models
+  $logger.info "Exporting \"Models\" for space"    
+  (vars['options']['EXPORT']['space']['models'] || []).compact.each{ | model |
+    export = $space_sdk.find_bridge_model(model)
+    base_filename = create_valid_filename(model)
+    $space_sdk.write_object_to_file("#{$core_path}/space/models/#{base_filename}.json", export.content["model"]) if export.status == 200
+  }
+  
+  # Export Space WebAPIs
+  $logger.info "Exporting Space \"WebAPIs\""    
+  webapis_array = []
+  (vars['options']['EXPORT']['space']['webapis'] || []).compact.each{ | webapi_slug |
+    export = $space_sdk.find_space_webapi(webapi_slug, {"include":"securityPolicies"})
+    $space_sdk.write_object_to_file("#{$core_path}/space/webApis/#{webapi_slug}.json", export.content['webApi'])
+  }
+  
   # Export Space Workflows
   if vars['options']['EXPORT']['space']['space_workflows']
     $logger.info "Exporting Space \"Workflows\"."
@@ -328,6 +369,15 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['sp
 
   # Export Space Attributes
   if vars['options']['EXPORT']['space']['attributes']
+    
+    # Export Space Attributes
+    $logger.info "Exporting \"Space Attributes\" for space"    
+    attributes_array = []
+    (vars['options']['EXPORT']['space']['attributes']['space'] || []).compact.each{ | attribute |
+      export = $space_sdk.find_space_attribute_definition(attribute)
+      attributes_array << export.content["spaceAttributeDefinition"] if export.status == 200
+    }    
+    $space_sdk.write_object_to_file("#{$core_path}/space/spaceAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
     
     # Export User Attributes
     $logger.info "Exporting \"User Attributes\" for space"    
@@ -354,25 +404,8 @@ if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['sp
       export = $space_sdk.find_team_attribute_definition(attribute)
       attributes_array << export.content["teamAttributeDefinition"] if export.status == 200
     }    
-    $space_sdk.write_object_to_file("#{$core_path}/space/teamAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    
-    # Export Space Attributes
-    $logger.info "Exporting \"Space Attributes\" for space"    
-    attributes_array = []
-    (vars['options']['EXPORT']['space']['attributes']['space'] || []).compact.each{ | attribute |
-      export = $space_sdk.find_space_attribute_definition(attribute)
-      attributes_array << export.content["spaceAttributeDefinition"] if export.status == 200
-    }    
-    $space_sdk.write_object_to_file("#{$core_path}/space/spaceAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0
-    
-    # Export Models
-    $logger.info "Exporting \"Models\" for space"    
-    (vars['options']['EXPORT']['space']['models'] || []).compact.each{ | model |
-      export = $space_sdk.find_bridge_model(model)
-      base_filename = create_valid_filename(model)
-      $space_sdk.write_object_to_file("#{$core_path}/space/models/#{base_filename}.json", export.content["model"]) if export.status == 200
-    }    
-      
+    $space_sdk.write_object_to_file("#{$core_path}/space/teamAttributeDefinitions.json", attributes_array) unless attributes_array.length == 0    
+
   end
 end 
 
