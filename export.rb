@@ -115,11 +115,28 @@ logger.info "Installing gems for the \"#{template_name}\" template."
 Dir.chdir(platform_template_path) { system("bundle", "install") }
 
 vars = {}
+file = "#{platform_template_path}/#{options['CONFIG_FILE']}"
+
+# Check if configuration file exists
+logger.info "Validating configuration file."
+begin
+  if File.exist?(file) != true
+    raise "The file \"#{options['CONFIG_FILE']}\" does not exist."
+  end
+rescue => error
+  logger.info error
+  exit
+end
 
 # Read the config file specified in the command line into the variable "vars"
-if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
+begin
   vars.merge!( YAML.load(File.read(file)) )
+rescue => error
+  logger.info "Error loading YAML configuration"
+  logger.info error
+  exit
 end
+logger.info "Configuration file passed validation."
 
 # Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
@@ -130,9 +147,8 @@ end
 SUBMISSIONS_TO_EXPORT = vars["options"]["SUBMISSIONS_TO_EXPORT"]
 REMOVE_DATA_PROPERTIES = vars["options"]["REMOVE_DATA_PROPERTIES"]
 
-# ------------------------------------------------------------------------------
-# core
-# ------------------------------------------------------------------------------
+# Output the yml file config
+logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
 
 #Setting core paths
 core_path = File.join(platform_template_path, "exports", vars['core']['space_slug'], "core")
@@ -147,7 +163,6 @@ space_sdk = KineticSdk::Core.new({
   password: vars["core"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{core_path}" })
 })
-
 
 
 logger.info "Removing files and folders from the existing \"#{template_name}\" template."
@@ -295,6 +310,7 @@ task_sdk.find_sources().content['sourceRoots'].each do |source|
     task_sdk.export_tree(tree['title'])
   end
 end
+
 task_sdk.export_routines()
 task_sdk.export_handlers()
 task_sdk.export_groups()

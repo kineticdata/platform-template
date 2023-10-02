@@ -61,7 +61,7 @@ pwd =  Dir.pwd
 begin
   logger = Logger.new("#{pwd}\\output.log")
 rescue
-  logger = Logger.new('C:\Users\travis.wiese\Source\repos\platform-template\StandAlone bundle\output.log')
+  logger = Logger.new('C:\temp\KD_export_output.log')
   #TODO - Ask for path of configs
 end
 logger.level = Logger::INFO
@@ -72,84 +72,101 @@ end
 
 logger.info "Base directory: #{pwd}"
 # Determine the Present Working Directory
+configFile = nil
 
-
-#ARGV << '-h' if ARGV.empty?
+ARGV << '-h' if ARGV.empty?
 # The options specified on the command line will be collected in *options*.
-# options = {}
-# OptionParser.new do |opts|
-#   opts.banner = "Usage: example.rb [options]"
+options = {}
+OptionParser.new do |opts|
+  break if opts === nil
+  opts.on("-c", "--c CONFIG_FILE", "The Configuration file to use") do |config|
+    configFile = config
+  end
 
-#   opts.on("-c", "--c CONFIG_FILE", "The Configuration file to use") do |config|
-#     options["CONFIG_FILE"] = config
-#   end
-  
-  # No argument, shows at tail.  This will print an options summary.
-  # Try it and see!
-#   opts.on_tail("-h", "--help", "Show this message") do
-#     puts opts
-#     exit
-#   end
-# end.parse!
-
+end.parse!
 
 
 # determine the directory paths
-# platform_template_path = File.dirname(File.expand_path(__FILE__))
-platform_template_path = Dir.pwd
-config_folder_path = File.join(platform_template_path,'config')
+  # platform_template_path = File.dirname(File.expand_path(__FILE__))
+  platform_template_path = Dir.pwd
+  config_folder_path = File.join(platform_template_path,'config')
 
-if !File.directory?(config_folder_path)
-  logger.info "Config folder not found at #{config_folder_path}"
-  puts "Cannot find config folder!"
-  puts "Exiting..."
-  gets
-  exit
+  #If no config passed through, run config selector
+if configFile == nil
+  configFile = config_selection
 end
-
-# #Determine Config file to use
-config_exts = ['.yaml','.yml']
-configArray = []
-logger.info "Checking #{config_folder_path} for config files"
-begin
-  Find.find("#{config_folder_path}/") do |file|
-    configArray.append(File.basename(file)) if config_exts.include?(File.extname(file)) && (File.basename(file).include?('export'))
-  end
-rescue
-  logger.info "Error finding default config file path!"
-  puts "Cannot find config files in default path! (#{pwd})"
-  puts "Exiting script..."
-  $stdin.gets
-  exit
-end
-logger.info "Found config files"
-
-puts "Select your config file"
-configArray.each_with_index do |cFile, index|
-  puts "#{index+1}) #{cFile}" 
-end
-logger.info "Sel section"
-print "Selection: "
-sel = $stdin.gets.chomp.to_i
-begin
-  configFile = configArray[sel-1]
-  logger.info "Option #{sel} - #{configFile}"
-rescue
-  logger.info "Error selecting config file!"
-  puts "Error selecting config file!"
-  puts "Exiting..."
-  gets
-  exit
-end
+puts "config: #{configFile}"
 
   logger.info "Post selection"
-
-
-
 
 # ------------------------------------------------------------------------------
 # methods
 # ------------------------------------------------------------------------------
+
+#Selection method if not passing config file path
+def config_selection
+
+  
+
+  #Ensure config folder exists
+  if !File.directory?(config_folder_path)
+    logger.info "Config folder not found at #{config_folder_path}"
+    puts "Cannot find config folder!"
+    puts "Exiting..."
+    gets
+    exit
+  end
+
+  # #Determine Config file to use
+  config_exts = ['.yaml','.yml']
+  configArray = []
+  logger.info "Checking #{config_folder_path} for config files"
+  begin
+    Find.find("#{config_folder_path}/") do |file|
+      configArray.append(File.basename(file)) if config_exts.include?(File.extname(file)) && (File.basename(file).include?('export'))
+    end
+  rescue
+    #No config files found in config folder
+    logger.info "Error finding default config file path!"
+    puts "Cannot find config files in default path! (#{pwd})"
+    puts "Exiting script..."
+    gets
+    exit
+  end
+  logger.info "Found config files"
+
+
+
+  #Print config file options with number indicators to select
+  puts "Select your config file"
+  configArray.each_with_index do |cFile, index|
+    puts "#{index+1}) #{cFile}" 
+  end
+  logger.info "Select section"
+  begin
+    print "Selection (0 to repeat options): "
+    sel = gets.chomp.to_i
+    begin
+      puts "sel is #{sel}"
+      if sel === 0
+        configArray.each_with_index do |cFile, index|
+          puts "#{index+1}) #{cFile}" 
+        end
+        next
+      end
+      configFile = configArray[sel-1]
+      logger.info "Option #{sel} - #{configFile}"
+      break
+    rescue
+      logger.info "Error selecting config file!"
+      puts "Error selecting config file!"
+      puts "Exiting..."
+      gets
+      exit
+    end
+  end while true
+  return configFile
+end
 
 # Removes discussion id attribute from a given model
 def remove_discussion_id_attribute(model)
@@ -178,7 +195,8 @@ Dir.chdir(platform_template_path) { system("bundle", "install") }
 
 vars = {}
 
-# Read the config file specified in the command line into the variable "vars"
+# Read the config file specified from the above selection
+
 if File.file?(file = "#{config_folder_path}/#{configFile}")
   vars.merge!( YAML.load(File.read(file)) )
 end
@@ -258,7 +276,7 @@ end
 
 # export submissions
 logger.info "Exporting and writing submission data"
-(SUBMISSIONS_TO_EXPORT || []).each do |item|
+(SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
   is_datastore = item["datastore"] || false
   logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
@@ -364,7 +382,8 @@ task_sdk.export_policy_rules()
 task_sdk.export_categories()
 task_sdk.export_access_keys()
 
-
+# Export workflows as these are not the same as Trees and Routines
+space_sdk.export_workflows()
 
 # ------------------------------------------------------------------------------
 # complete
