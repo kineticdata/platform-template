@@ -285,11 +285,28 @@ $logger.info "Installing gems for the \"#{template_name}\" template."
 Dir.chdir(platform_template_path) { system("bundle", "install") }
 
 vars = {}
+file = "#{platform_template_path}/#{options['CONFIG_FILE']}"
+
+# Check if configuration file exists
+$logger.info "Validating configuration file."
+begin
+  if File.exist?(file) != true
+    raise "The file \"#{options['CONFIG_FILE']}\" does not exist."
+  end
+rescue => error
+  $logger.info error
+  exit
+end
 
 # Read the config file specified in the command line into the variable "vars"
-if File.file?(file = "#{platform_template_path}/#{options['CONFIG_FILE']}")
+begin
   vars.merge!( YAML.load(File.read(file)) )
+rescue => error
+  $logger.info "Error loading YAML configuration"
+  $logger.info error
+  exit
 end
+$logger.info "Configuration file passed validation."
 
 # Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
@@ -302,16 +319,9 @@ if vars["options"]
 end
 
 # Output the yml file config
-$logger.info JSON.pretty_generate(vars)
+$logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
 
-# ------------------------------------------------------------------------------
-# core
-# ------------------------------------------------------------------------------
-
-$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
-FileUtils.rm_rf Dir.glob("#{$core_path}/*")
-
-$logger.info "Setting up the Core SDK"
+$logger.info "Setting up the SDK"
  
 $space_sdk = KineticSdk::Core.new({
   space_server_url: vars["core"]["server_url"],
@@ -320,6 +330,54 @@ $space_sdk = KineticSdk::Core.new({
   password: vars["core"]["service_user_password"],
   options: http_options.merge({ export_directory: "#{$core_path}" })
 })
+
+task_sdk = KineticSdk::Task.new({
+  app_server_url: "#{vars["task"]["server_url"]}",
+  username: vars["task"]["service_user_username"],
+  password: vars["task"]["service_user_password"],
+  options: http_options.merge({ export_directory: "#{$task_path}" })
+})
+
+# ------------------------------------------------------------------------------
+# Validate connection and Credentials to Server
+# ------------------------------------------------------------------------------
+
+# Validate Core Connection
+begin
+  $logger.info "Validating connection to Core \"#{$space_sdk.api_url}\""
+  response = $space_sdk.me()
+  if response.status == 0
+      raise response.message
+  elsif response.status.to_s.match(/4\d{2}/)
+    raise response.content['error']
+  end
+rescue => error
+  $logger.info error
+  exit
+end
+
+# Validate Task Connection
+begin
+  $logger.info "Validating connection to Task \"#{task_sdk.api_url}\""
+  response = task_sdk.environment()
+  if response.status == 0
+    raise response.message
+  elsif response.status.to_s.match(/4\d{2}/)
+    raise response.content['error']
+  end
+rescue => error
+  $logger.info error
+  exit
+end
+
+$logger.info "Validating connection to Cors and Task was Successful"
+
+# ------------------------------------------------------------------------------
+# core
+# ------------------------------------------------------------------------------
+
+$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+FileUtils.rm_rf Dir.glob("#{$core_path}/*")
 
 # fetch export from core service and write to export directory
 $logger.info "Exporting the core components."
@@ -517,13 +575,6 @@ $logger.info "Removing files and folders from the existing \"#{template_name}\" 
 FileUtils.rm_rf Dir.glob("#{$task_path}/*")
 
 $logger.info "Setting up the Task SDK"
-
-task_sdk = KineticSdk::Task.new({
-  app_server_url: "#{vars["task"]["server_url"]}",
-  username: vars["task"]["service_user_username"],
-  password: vars["task"]["service_user_password"],
-  options: http_options.merge({ export_directory: "#{$task_path}" })
-})
 
 if vars['options'] && vars['options']['EXPORT'] && vars['options']['EXPORT']['workflow']
   # Export Trees
