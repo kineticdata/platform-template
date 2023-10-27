@@ -4,10 +4,3 @@ config/*.yml
 !config/servername_environment_export_config.yml
 !config/servername_environment_export_specific_config.yml
 exports/*
-StandAlone bundle/exports/*
-StandAlone bundle/config/*.yml
-!StandAlone bundle/config/servername_environment_import_config.yml
-!StandAlone bundle/config/servername_environment_export_config.yml
-!StandAlone bundle/config/servername_environment_export_specific_config.yml
-*.exe
-*.log
