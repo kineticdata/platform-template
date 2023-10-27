@@ -193,10 +193,7 @@ file = "#{platform_template_path}/#{options['CONFIG_FILE']}"
 logger.info "Validating configuration file."
 begin
   if File.exist?(file) != true
-    file = "#{config_folder_path}/#{options['CONFIG_FILE']}"
-    if File.exist?(file) != true
-      raise "The file \"#{options['CONFIG_FILE']}\" does not exist in the base or config directories."
-    end
+    raise "The file \"#{options['CONFIG_FILE']}\" does not exist."
   end
 rescue => error
   logger.info error
@@ -213,31 +210,6 @@ rescue => error
 end
 logger.info "Configuration file passed validation."
 
-def SecurePWD(file,vars,pwdAttribute)
-  #If no pwd, then ask for one, otherwise take current string that was not found to be B64 and convert
-  if vars[pwdAttribute]["service_user_password"].nil?
-    password = IO::console.getpass "Enter Password(#{pwdAttribute}): "
-  else
-    password =vars[pwdAttribute]["service_user_password"]
-  end
-  enc = Base64.strict_encode64(password)
-  vars[pwdAttribute]["service_user_password"] = enc.to_s
-  File.open(file, 'w') {|f| f.write vars.to_yaml}
-  return password
-end
-
-#Setup secure pwd function - Checks for nil and prompts for pwd, then b64 encodes and writes to yml
-if !vars["core"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["core"]["service_user_password"])) != vars["core"]["service_user_password"]
-  vars["core"]["service_user_password"] = SecurePWD(file,vars,"core")
-end
-if !vars["task"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["task"]["service_user_password"])) != vars["task"]["service_user_password"]
-  vars["task"]["service_user_password"] = SecurePWD(file,vars,"task")
-end
-
-#Write PT pwds into local variable
-vars["core"]["service_user_password"] = Base64.decode64(vars["core"]["service_user_password"])
-vars["task"]["service_user_password"] = Base64.decode64(vars["task"]["service_user_password"])
-
 # Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
   result[k.to_sym] = v
@@ -247,37 +219,10 @@ end
 SUBMISSIONS_TO_EXPORT = vars["options"]["SUBMISSIONS_TO_EXPORT"]
 REMOVE_DATA_PROPERTIES = vars["options"]["REMOVE_DATA_PROPERTIES"]
 
-#Config exports folder exists, if not then create
-if !File.directory?(File.join(platform_template_path,"exports"))
-  Dir.mkdir(File.join(platform_template_path, "exports"))
-end
-
-#Setting core paths utilzing variables
-if !vars['core']['space_slug'].nil?
-  folderName = vars['core']['space_slug']
-elsif !vars['core']['space_name'].nil?
-  folderName = vars['core']['space_name']
-else
-  puts "No space slug or name provided! Please provide one in order to export..."
-  gets
-  exit
-end
-core_path = File.join(platform_template_path, "exports", folderName, "core")
-task_path = File.join(platform_template_path, "exports", folderName, "task")
-
-puts "Core #{core_path}"
-puts "Task #{task_path}"
-gets
-exit
-
 # Output the yml file config
 logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
 
-#Setting core paths
-core_path = File.join(platform_template_path, "exports", vars['core']['space_slug'], "core")
-task_path = File.join(platform_template_path, "exports", vars['core']['space_slug'], "task")
-
-logger.info "Setting up the Core SDK"
+logger.info "Setting up the SDK"
  
 space_sdk = KineticSdk::Core.new({
   space_server_url: vars["core"]["server_url"],
@@ -332,9 +277,10 @@ logger.info "Validating connection to Cors and Task was Successful"
 # core
 # ------------------------------------------------------------------------------
 
-
 logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{core_path}/*")
+
+logger.info "Setting up the Core SDK"
 
 # fetch export from core service and write to export directory
 logger.info "Exporting the core components for the \"#{template_name}\" template."
@@ -454,16 +400,6 @@ logger.info "  - submission data export complete"
 # ------------------------------------------------------------------------------
 # task
 # ------------------------------------------------------------------------------
-
-
-task_sdk = KineticSdk::Task.new({
-  app_server_url: "#{vars["task"]["server_url"]}",
-  username: vars["task"]["service_user_username"],
-  password: vars["task"]["service_user_password"],
-  options: http_options.merge({ export_directory: "#{task_path}" })
-})
-
-
 logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{task_path}/*")
 
@@ -485,9 +421,6 @@ task_sdk.export_groups()
 task_sdk.export_policy_rules()
 task_sdk.export_categories()
 task_sdk.export_access_keys()
-
-# Export workflows as these are not the same as Trees and Routines
-space_sdk.export_workflows()
 
 # ------------------------------------------------------------------------------
 # complete
