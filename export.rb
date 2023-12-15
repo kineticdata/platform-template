@@ -437,7 +437,6 @@ logger.info "Exporting and writing submission data"
             # dir and file name to write attachment
             download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
             # url to retrieve the attachment
-            logger.info ("#{attachment_base_url}/submissions/#{submission_id}/files/#{field}/#{index}/#{attachment['name']}")
             url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
             # retrieve and write attachment
             space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
