@@ -222,16 +222,28 @@ def SecurePWD(file,vars,pwdAttribute)
   end
   enc = Base64.strict_encode64(password)
   vars[pwdAttribute]["service_user_password"] = enc.to_s
-  File.open(file, 'w') {|f| f.write vars.to_yaml}
+  begin
+    file = File.open(file, 'w') 
+    file.write vars.to_yaml
+     #{ |f| f.write vars.to_yaml }
+  rescue
+    logger.error("We crashed!")
+  ensure
+    file.close
+  end
   return password
 end
+##TODO - This didn't write correctly - It set first as a string in quotes, second as encoded
+##TODO - This didn't read a plaintext and encode for me
 
 #Setup secure pwd function - Checks for nil and prompts for pwd, then b64 encodes and writes to yml
 if !vars["core"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["core"]["service_user_password"])) != vars["core"]["service_user_password"]
-  vars["core"]["service_user_password"] = SecurePWD(file,vars,"core")
+  SecurePWD(file,vars,"core")
+  logger.info("Core pwd encoded")
 end
 if !vars["task"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["task"]["service_user_password"])) != vars["task"]["service_user_password"]
-  vars["task"]["service_user_password"] = SecurePWD(file,vars,"task")
+  SecurePWD(file,vars,"task")
+  logger.info("Task pwd encoded")
 end
 
 #Write PT pwds into local variable
@@ -264,11 +276,6 @@ else
 end
 core_path = File.join(platform_template_path, "exports", folderName, "core")
 task_path = File.join(platform_template_path, "exports", folderName, "task")
-
-puts "Core #{core_path}"
-puts "Task #{task_path}"
-gets
-exit
 
 # Output the yml file config
 logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"

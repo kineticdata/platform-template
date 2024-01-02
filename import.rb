@@ -131,6 +131,14 @@ vars["options"]["delete"] = !vars["options"]["delete"].nil? ? vars["options"]["d
 
 logger.info "Importing using the config: #{JSON.pretty_generate(vars)}"
 
+#Decode password to utilize
+def DecodePWD(pwdAttribute)
+  return Base64.decode64(pwdAttribute)
+end
+
+vars["core"]["service_user_password"] = DecodePWD(vars["core"]["service_user_password"])
+vars["task"]["service_user_password"] = DecodePWD(vars["task"]["service_user_password"])
+
 
 space_sdk = KineticSdk::Core.new({
   space_server_url: vars["core"]["server_url"],
