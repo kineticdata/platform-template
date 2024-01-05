@@ -53,6 +53,7 @@ require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
 
 template_name = "platform-template"
+$pwdFields = ["core","task"]
 
 logger = Logger.new(STDERR)
 logger.level = Logger::INFO
@@ -62,6 +63,7 @@ logger.formatter = proc do |severity, datetime, progname, msg|
 end
 
 
+
 # Determine the Present Working Directory
 pwd = File.expand_path(File.dirname(__FILE__))
 
@@ -69,8 +71,6 @@ pwd = File.expand_path(File.dirname(__FILE__))
 # The options specified on the command line will be collected in *options*.
 options = {}
 OptionParser.new do |opts|
-  break if opts === '' #If no arguments provided, then break out and move to selection
-  #TODO - See if this can be more elegant or if this is the best we have
   opts.banner = "Usage: example.rb [options]"
   opts.on("-c", "--c CONFIG_FILE", "The Configuration file to use") do |config|
     options["CONFIG_FILE"] = config
@@ -78,11 +78,10 @@ OptionParser.new do |opts|
   
   # No argument, shows at tail.  This will print an options summary.
   # Try it and see!
-  opts.on("-h", "--help", "Show this message") do
+  opts.on_tail("-h", "--help", "Show this message") do
     puts opts
     exit
   end
-
 end.parse!
 
 
@@ -102,13 +101,15 @@ def config_selection(config_folder_path, logger)
   config_exts = ['.yaml','.yml']
   configArray = []
   logger.info "Checking #{config_folder_path} for config files"
+  #Check config folder for yaml/yml files containing the word 'export'
   begin
     Find.find("#{config_folder_path}/") do |file|
       configArray.append(File.basename(file)) if config_exts.include?(File.extname(file)) && (File.basename(file).include?('export'))
     end
-  rescue
+  rescue error
     #No config files found in config folder
-    logger.info "Error finding default config file path!"
+    logger.error "Error finding default config file path!"
+    logger.error "Error reported: #{error}"
     puts "Cannot find config files in default path! (#{pwd})"
     puts "Exiting script..."
     gets
@@ -200,6 +201,7 @@ begin
   end
 rescue => error
   logger.info error
+  logger.info "Exiting..."
   exit
 end
 
@@ -209,46 +211,97 @@ begin
 rescue => error
   logger.info "Error loading YAML configuration"
   logger.info error
+  logger.info "Exiting..."
+  gets
   exit
 end
 logger.info "Configuration file passed validation."
 
+
+#Check if nil/unencoded and update accordingly
 def SecurePWD(file,vars,pwdAttribute)
   #If no pwd, then ask for one, otherwise take current string that was not found to be B64 and convert
   if vars[pwdAttribute]["service_user_password"].nil?
     password = IO::console.getpass "Enter Password(#{pwdAttribute}): "
   else
-    password =vars[pwdAttribute]["service_user_password"]
+    password = vars[pwdAttribute]["service_user_password"]
   end
   enc = Base64.strict_encode64(password)
   vars[pwdAttribute]["service_user_password"] = enc.to_s
   begin
-    file = File.open(file, 'w') 
-    file.write vars.to_yaml
+    fileObj = File.open(file, 'w') 
+    puts "Updated pwd in #{pwdAttribute} to #{enc}"
+    fileObj.write vars.to_yaml
      #{ |f| f.write vars.to_yaml }
-  rescue
-    logger.error("We crashed!")
+  rescue ArgumentError
+    logger.error("There was an error while updating variables file:")
+    logger.error(ArgumentError)
   ensure
-    file.close
+    fileObj.close
   end
-  return password
-end
-##TODO - This didn't write correctly - It set first as a string in quotes, second as encoded
-##TODO - This didn't read a plaintext and encode for me
-
-#Setup secure pwd function - Checks for nil and prompts for pwd, then b64 encodes and writes to yml
-if !vars["core"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["core"]["service_user_password"])) != vars["core"]["service_user_password"]
-  SecurePWD(file,vars,"core")
-  logger.info("Core pwd encoded")
-end
-if !vars["task"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["task"]["service_user_password"])) != vars["task"]["service_user_password"]
-  SecurePWD(file,vars,"task")
-  logger.info("Task pwd encoded")
 end
 
+#Decode password to utilize
+def DecodePWD(file, vars, pwdLoc)
+  pwdAttribute = vars[pwdLoc]["service_user_password"]
+  # if !pwdAttribute.is_a?(String) || Base64.strict_encode64(Base64.decode64(pwdAttribute)) != pwdAttribute || pwdAttribute === "<PASSWORD>"
+  #   puts "Adjusting password for #{pwdLoc}"
+  #   SecurePWD(file, vars, pwdLoc)
+  #   pwdAttribute = vars[pwdLoc]["service_user_password"]
+  # end
+  return Base64.decode64(pwdAttribute)
+end
+
+#Confirm passwords exist and are in a proper format, call SecurePWD for any exceptions
+def ValidatePWD(file, vars)
+  $pwdFields.each do |field|
+    t = vars[field]["service_user_password"]
+    #See if not a string, not encoded, or default <PASSWORD>
+    if !t.is_a?(String) || Base64.strict_encode64(Base64.decode64(t)) != t || t === "<PASSWORD>"
+      puts "Updating password #{t}"
+      SecurePWD(file, vars, field)
+    end
+  end
+end
+
+#OLD
+#Setup secure pwd function - If entry is not a string(nil) or unencoded, then run pwd encoder/prompt
+# if !vars["core"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["core"]["service_user_password"])) != vars["core"]["service_user_password"]
+#   SecurePWD(file,vars,"core")
+#   logger.info("Core pwd encoded")
+# end
+# if !vars["task"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["task"]["service_user_password"])) != vars["task"]["service_user_password"]
+#   SecurePWD(file,vars,"task")
+#   logger.info("Task pwd encoded")
+# end
 #Write PT pwds into local variable
-vars["core"]["service_user_password"] = Base64.decode64(vars["core"]["service_user_password"])
-vars["task"]["service_user_password"] = Base64.decode64(vars["task"]["service_user_password"])
+# vars["core"]["service_user_password"] = Base64.decode64(vars["core"]["service_user_password"])
+# vars["task"]["service_user_password"] = Base64.decode64(vars["task"]["service_user_password"])
+
+#NEW
+#Will confirm there is a valid, encoded password and decode. Otherwise it will prompt/encode pwd and return decoded variant
+
+#Temporary workaround - run decode and trash first time to ensure improper data written - Otherwise first action will store decoded var and 2nd will write it to the config
+ValidatePWD(file, vars)
+#TODO - Review whether or not vars is handed in or just the pwd value
+vars["core"]["service_user_password"] = DecodePWD(file, vars, "core")
+vars["task"]["service_user_password"] = DecodePWD(file, vars, "task")
+puts "Pause here..."
+gets
+exit
+
+if vars["core"]["service_user_password"].empty? || vars["core"]["service_user_password"].nil?
+  puts "Core password is blank! Password required. Exiting..."
+  gets
+  exit
+end
+if vars["task"]["service_user_password"].empty? || vars["task"]["service_user_password"].nil?
+  puts "Task password is blank! Password required. Exiting..."
+  gets
+  exit
+end
+
+
 
 # Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
