@@ -8,6 +8,7 @@
 # Teams are not deleted from destination.  It could be too dangerous to delete them.
 
 # TODO
+#Have better validation/notification if you cannot connect (Certificate issue)
 
 # RUNNING THE SCRIPT:
 #   ruby import_script.rb -c "<<Dir/CONFIG_FILE.rb>>"
@@ -47,6 +48,8 @@ require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
 
 template_name = "platform-template"
+$pwdFields = ["core","task"]
+
 
 logger = Logger.new(STDERR)
 logger.level = Logger::INFO
@@ -226,11 +229,6 @@ end
 #Decode password to utilize
 def DecodePWD(file, vars, pwdLoc)
   pwdAttribute = vars[pwdLoc]["service_user_password"]
-  # if !pwdAttribute.is_a?(String) || Base64.strict_encode64(Base64.decode64(pwdAttribute)) != pwdAttribute || pwdAttribute === "<PASSWORD>"
-  #   puts "Adjusting password for #{pwdLoc}"
-  #   SecurePWD(file, vars, pwdLoc)
-  #   pwdAttribute = vars[pwdLoc]["service_user_password"]
-  # end
   return Base64.decode64(pwdAttribute)
 end
 

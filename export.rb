@@ -1,3 +1,6 @@
+#TODO work
+#Bluestone exported a workflow as "inactive" but it imported as "active"
+
 # RUNNING THE SCRIPT:
 #   ruby export.rb -c "<<PATH/CONFIG_FILE.rb>>"
 #   ruby export.rb -c "config/foo-web-server.rb"
@@ -55,9 +58,9 @@ require 'base64'      #For pwd encoding
 template_name = "platform-template"
 $pwdFields = ["core","task"]
 
-logger = Logger.new(STDERR)
-logger.level = Logger::INFO
-logger.formatter = proc do |severity, datetime, progname, msg|
+$logger = Logger.new(STDERR)
+$logger.level = Logger::INFO
+$logger.formatter = proc do |severity, datetime, progname, msg|
   date_format = datetime.utc.strftime("%Y-%m-%dT%H:%M:%S.%LZ")
   "[#{date_format}] #{severity}: #{msg}\n"
 end
@@ -86,11 +89,11 @@ end.parse!
 
 
 #Configuration Selection
-def config_selection(config_folder_path, logger)
+def config_selection(config_folder_path)
 
   #Ensure config folder exists
   if !File.directory?(config_folder_path)
-    logger.info "Config folder not found at #{config_folder_path}"
+    $logger.info "Config folder not found at #{config_folder_path}"
     puts "Cannot find config folder!"
     puts "Exiting..."
     gets
@@ -100,7 +103,7 @@ def config_selection(config_folder_path, logger)
   # #Determine Config file to use
   config_exts = ['.yaml','.yml']
   configArray = []
-  logger.info "Checking #{config_folder_path} for config files"
+  $logger.info "Checking #{config_folder_path} for config files"
   #Check config folder for yaml/yml files containing the word 'export'
   begin
     Find.find("#{config_folder_path}/") do |file|
@@ -108,21 +111,21 @@ def config_selection(config_folder_path, logger)
     end
   rescue error
     #No config files found in config folder
-    logger.error "Error finding default config file path!"
-    logger.error "Error reported: #{error}"
+    $logger.error "Error finding default config file path!"
+    $logger.error "Error reported: #{error}"
     puts "Cannot find config files in default path! (#{pwd})"
     puts "Exiting script..."
     gets
     exit
   end
-  logger.info "Found config files"
+  $logger.info "Found config files"
 
   #Print config file options with number indicators to select
   puts "Select your config file"
   configArray.each_with_index do |cFile, index|
     puts "#{index+1}) #{cFile}" 
   end
-  logger.info "Select section"
+  $logger.info "Select section"
   begin
     print "Selection (0 to repeat options): "
     sel = gets.chomp.to_i
@@ -134,10 +137,10 @@ def config_selection(config_folder_path, logger)
         next
       end
       configFile = configArray[sel-1]
-      logger.info "Option #{sel} - #{configFile}"
+      $logger.info "Option #{sel} - #{configFile}"
       break
     rescue
-      logger.info "Error selecting config file! Exiting..."
+      $logger.info "Error selecting config file! Exiting..."
       puts "Error selecting config file!"
       puts "Exiting..."
       gets
@@ -155,7 +158,7 @@ platform_template_path = File.dirname(File.expand_path(__FILE__))
 config_folder_path = File.join(platform_template_path,'config')
 
 if options["CONFIG_FILE"].nil?
-  options["CONFIG_FILE"] = config_selection(config_folder_path, logger)
+  options["CONFIG_FILE"] = config_selection(config_folder_path)
 end
 
 # ------------------------------------------------------------------------------
@@ -184,14 +187,14 @@ end
 # setup
 # ------------------------------------------------------------------------------
 
-logger.info "Installing gems for the \"#{template_name}\" template."
+$logger.info "Installing gems for the \"#{template_name}\" template."
 Dir.chdir(platform_template_path) { system("bundle", "install") }
 
 vars = {}
 file = "#{platform_template_path}/#{options['CONFIG_FILE']}"
 
 # Check if configuration file exists
-logger.info "Validating configuration file."
+$logger.info "Validating configuration file."
 begin
   if File.exist?(file) != true
     file = "#{config_folder_path}/#{options['CONFIG_FILE']}"
@@ -200,8 +203,8 @@ begin
     end
   end
 rescue => error
-  logger.info error
-  logger.info "Exiting..."
+  $logger.info error
+  $logger.info "Exiting..."
   exit
 end
 
@@ -209,13 +212,13 @@ end
 begin
   vars.merge!( YAML.load(File.read(file)) )
 rescue => error
-  logger.info "Error loading YAML configuration"
-  logger.info error
-  logger.info "Exiting..."
+  $logger.info "Error loading YAML configuration"
+  $logger.info error
+  $logger.info "Exiting..."
   gets
   exit
 end
-logger.info "Configuration file passed validation."
+$logger.info "Configuration file passed validation."
 
 
 #Check if nil/unencoded and update accordingly
@@ -234,21 +237,17 @@ def SecurePWD(file,vars,pwdAttribute)
     fileObj.write vars.to_yaml
      #{ |f| f.write vars.to_yaml }
   rescue ArgumentError
-    logger.error("There was an error while updating variables file:")
-    logger.error(ArgumentError)
+    $logger.error("There was an error while updating variables file:")
+    $logger.error(ArgumentError)
   ensure
     fileObj.close
   end
+  #TODO - If you cannot properly write an encoded pwd, exit
 end
 
 #Decode password to utilize
 def DecodePWD(file, vars, pwdLoc)
   pwdAttribute = vars[pwdLoc]["service_user_password"]
-  # if !pwdAttribute.is_a?(String) || Base64.strict_encode64(Base64.decode64(pwdAttribute)) != pwdAttribute || pwdAttribute === "<PASSWORD>"
-  #   puts "Adjusting password for #{pwdLoc}"
-  #   SecurePWD(file, vars, pwdLoc)
-  #   pwdAttribute = vars[pwdLoc]["service_user_password"]
-  # end
   return Base64.decode64(pwdAttribute)
 end
 
@@ -264,31 +263,9 @@ def ValidatePWD(file, vars)
   end
 end
 
-#OLD
-#Setup secure pwd function - If entry is not a string(nil) or unencoded, then run pwd encoder/prompt
-# if !vars["core"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["core"]["service_user_password"])) != vars["core"]["service_user_password"]
-#   SecurePWD(file,vars,"core")
-#   logger.info("Core pwd encoded")
-# end
-# if !vars["task"]["service_user_password"].is_a?(String) || Base64.strict_encode64(Base64.decode64(vars["task"]["service_user_password"])) != vars["task"]["service_user_password"]
-#   SecurePWD(file,vars,"task")
-#   logger.info("Task pwd encoded")
-# end
-#Write PT pwds into local variable
-# vars["core"]["service_user_password"] = Base64.decode64(vars["core"]["service_user_password"])
-# vars["task"]["service_user_password"] = Base64.decode64(vars["task"]["service_user_password"])
-
-#NEW
-#Will confirm there is a valid, encoded password and decode. Otherwise it will prompt/encode pwd and return decoded variant
-
-#Temporary workaround - run decode and trash first time to ensure improper data written - Otherwise first action will store decoded var and 2nd will write it to the config
 ValidatePWD(file, vars)
-#TODO - Review whether or not vars is handed in or just the pwd value
 vars["core"]["service_user_password"] = DecodePWD(file, vars, "core")
 vars["task"]["service_user_password"] = DecodePWD(file, vars, "task")
-puts "Pause here..."
-gets
-exit
 
 if vars["core"]["service_user_password"].empty? || vars["core"]["service_user_password"].nil?
   puts "Core password is blank! Password required. Exiting..."
@@ -331,9 +308,9 @@ core_path = File.join(platform_template_path, "exports", folderName, "core")
 task_path = File.join(platform_template_path, "exports", folderName, "task")
 
 # Output the yml file config
-logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
+$logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
 
-logger.info "Setting up the SDK"
+$logger.info "Setting up the SDK"
  
 space_sdk = KineticSdk::Core.new({
   space_server_url: vars["core"]["server_url"],
@@ -356,7 +333,7 @@ task_sdk = KineticSdk::Task.new({
 
 # Validate Core Connection
 begin
-  logger.info "Validating connection to Core \"#{space_sdk.api_url}\""
+  $logger.info "Validating connection to Core \"#{space_sdk.api_url}\""
   response = space_sdk.me()
   if response.status == 0
       raise response.message
@@ -364,13 +341,13 @@ begin
     raise response.content['error']
   end
 rescue => error
-  logger.info error
+  $logger.info error
   exit
 end
 
 # Validate Task Connection
 begin
-  logger.info "Validating connection to Task \"#{task_sdk.api_url}\""
+  $logger.info "Validating connection to Task \"#{task_sdk.api_url}\""
   response = task_sdk.environment()
   if response.status == 0
     raise response.message
@@ -378,26 +355,26 @@ begin
     raise response.content['error']
   end
 rescue => error
-  logger.info error
+  $logger.info error
   exit
 end
 
-logger.info "Validating connection to Cors and Task was Successful"
+$logger.info "Validating connection to Cors and Task was Successful"
 
 # ------------------------------------------------------------------------------
 # core
 # ------------------------------------------------------------------------------
 
 
-logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{core_path}/*")
 
-logger.info "Setting up the Core SDK"
+$logger.info "Setting up the Core SDK"
 
 # fetch export from core service and write to export directory
-logger.info "Exporting the core components for the \"#{template_name}\" template."
-logger.info "  exporting with api: #{space_sdk.api_url}"
-logger.info "   - exporting configuration data (Kapps,forms, etc)"
+$logger.info "Exporting the core components for the \"#{template_name}\" template."
+$logger.info "  exporting with api: #{space_sdk.api_url}"
+$logger.info "   - exporting configuration data (Kapps,forms, etc)"
 space_sdk.export_space
 
 # cleanup properties that should not be committed with export
@@ -436,10 +413,10 @@ Dir["#{core_path}/**/*.json"].each do |filename|
 end
 
 # export submissions
-logger.info "Exporting and writing submission data"
+$logger.info "Exporting and writing submission data"
 (SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
   is_datastore = item["datastore"] || false
-  logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
+  $logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
   submission_path = is_datastore ?
     "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
@@ -507,16 +484,16 @@ logger.info "Exporting and writing submission data"
   # close the submissions file
   file.close()
 end
-logger.info "  - submission data export complete"
+$logger.info "  - submission data export complete"
 
 # ------------------------------------------------------------------------------
 # task
 # ------------------------------------------------------------------------------
-logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{task_path}/*")
 
-logger.info "Exporting the task components for the \"#{template_name}\" template."
-logger.info "  exporting with api: #{task_sdk.api_url}"
+$logger.info "Exporting the task components for the \"#{template_name}\" template."
+$logger.info "  exporting with api: #{task_sdk.api_url}"
 
 # export all sources, trees, routines, handlers,
 # groups, policy rules, categories, and access keys
@@ -538,4 +515,4 @@ task_sdk.export_access_keys()
 # complete
 # ------------------------------------------------------------------------------
 
-logger.info "Finished exporting the \"#{template_name}\" template."
+$logger.info "Finished exporting the \"#{template_name}\" template."
