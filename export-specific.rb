@@ -152,7 +152,7 @@ def create_valid_filename(filename)
   # Replace all `.` with `/`
   # Replace all `::` with `-` (this ensures nested Teams/Categories maintain a separator)
   # Replace all non-slug characters with ``
-  updated_filename = "#{filename.gsub(/(\/)|(\\)/, '-').gsub(/\s{2,}/, ' ').gsub('.', '/').gsub(/::/, '-').gsub(/[^ a-zA-Z0-9_\-\/]/, '')}.json"
+  updated_filename = "#{filename.gsub(/(\/)|(\\)/, '-').gsub(/\s{2,}/, ' ').gsub('.', '/').gsub(/::/, '-').gsub(/[^ a-zA-Z0-9_\-\/]/, '')}"
 end
 
 def export_workflow(args)
@@ -168,7 +168,7 @@ def export_workflow(args)
   end 
 
   # Select Workflows that match the name or event in the configuration
-  export_workflows = workflows['workflows'].select { |workflow| !workflow['event'].nil? && (args['workflows'].include?(workflow['event']) || args['workflows'].include?(workflow['name'])) }
+  export_workflows = (workflows['workflows'] || []).select { |workflow| !workflow['event'].nil? && (args['workflows'].include?(workflow['event']) || args['workflows'].include?(workflow['name'])) }
   
   # Iterate through each workflow and export
   export_workflows.each { |workflow|
