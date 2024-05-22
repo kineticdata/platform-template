@@ -6,3 +6,4 @@ config/*.yml
 exports/*
 Local_Gems/*
 Tools/*
+GrabNGoBundle/*
