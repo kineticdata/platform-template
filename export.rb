@@ -338,12 +338,7 @@ logger.info "  exporting with api: #{task_sdk.api_url}"
 # export all sources, trees, routines, handlers,
 # groups, policy rules, categories, and access keys
 task_sdk.export_sources()
-task_sdk.find_sources().content['sourceRoots'].each do |source|
-  task_sdk.find_trees({ "source" => source['name'] }).content['trees'].each do |tree|
-    task_sdk.export_tree(tree['title'])
-  end
-end
-
+task_sdk.export_trees()
 task_sdk.export_routines()
 task_sdk.export_handlers()
 task_sdk.export_groups()
