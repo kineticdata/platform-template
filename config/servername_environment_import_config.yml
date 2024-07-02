@@ -4,6 +4,7 @@ core:
   server_url: https://web-server.com
   space_slug: <SPACE_SLUG>
   space_name: <SPACE_NAME>
+  old_space_slug: 
   service_user_username: <USER_NAME>
   service_user_password: <PASSWORD>
 options:
