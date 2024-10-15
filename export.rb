@@ -53,8 +53,7 @@
 require 'logger'      #For System Logging
 require 'json'
 require 'optparse'    #For argument parsing
-require 'kinetic_sdk' 
-# Note you may need to run "Gem install Kinetic_sdk"
+require 'kinetic_sdk' # Note you may need to run "Gem install Kinetic_sdk"
 require 'Find'        #For config list building
 require 'io/console'  #For password request
 require 'base64'      #For pwd encoding

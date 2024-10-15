@@ -43,7 +43,7 @@ require 'rexml/document'
 require 'optparse'    #For argument parsing
 require 'kinetic_sdk'
 require 'Find'        #For config list building
-include REXML
+require 'REXML'
 require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
 
