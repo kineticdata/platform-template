@@ -3,3 +3,7 @@ config/*.yml
 !config/servername_environment_import_config.yml
 !config/servername_environment_export_config.yml
 !config/servername_environment_export_specific_config.yml
+exports/*
+Local_Gems/*
+Tools/*
+GrabNGoBundle/*

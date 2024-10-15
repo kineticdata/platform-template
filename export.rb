@@ -1,3 +1,6 @@
+#TODO work
+#Bluestone exported a workflow as "inactive" but it imported as "active"
+
 # RUNNING THE SCRIPT:
 #   ruby export.rb -c "<<PATH/CONFIG_FILE.rb>>"
 #   ruby export.rb -c "config/foo-web-server.rb"
@@ -18,6 +21,9 @@
   options:
     SUBMISSIONS_TO_EXPORT:
     - datastore: true
+      formSlug: <FORM_SLUG>
+    - datastore: false
+      kappSlug: <KAPP_SLUG>
       formSlug: <FORM_SLUG>
 
     REMOVE_DATA_PROPERTIES:
@@ -44,31 +50,34 @@
 
 =end
 
-require 'logger'
+require 'logger'      #For System Logging
 require 'json'
-require 'optparse'
-require 'kinetic_sdk'
+require 'optparse'    #For argument parsing
+require 'kinetic_sdk' # Note you may need to run "Gem install Kinetic_sdk"
+require 'Find'        #For config list building
+require 'io/console'  #For password request
+require 'base64'      #For pwd encoding
 
 template_name = "platform-template"
+$pwdFields = ["core","task"]
 
-logger = Logger.new(STDERR)
-logger.level = Logger::INFO
-logger.formatter = proc do |severity, datetime, progname, msg|
+$logger = Logger.new(STDERR)
+$logger.level = Logger::INFO
+$logger.formatter = proc do |severity, datetime, progname, msg|
   date_format = datetime.utc.strftime("%Y-%m-%dT%H:%M:%S.%LZ")
   "[#{date_format}] #{severity}: #{msg}\n"
 end
 
 
+
 # Determine the Present Working Directory
 pwd = File.expand_path(File.dirname(__FILE__))
 
-ARGV << '-h' if ARGV.empty?
 
 # The options specified on the command line will be collected in *options*.
 options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: example.rb [options]"
-
   opts.on("-c", "--c CONFIG_FILE", "The Configuration file to use") do |config|
     options["CONFIG_FILE"] = config
   end
@@ -81,10 +90,79 @@ OptionParser.new do |opts|
   end
 end.parse!
 
+
+#Configuration Selection
+def config_selection(config_folder_path)
+
+  #Ensure config folder exists
+  if !File.directory?(config_folder_path)
+    $logger.info "Config folder not found at #{config_folder_path}"
+    puts "Cannot find config folder!"
+    puts "Exiting..."
+    gets
+    exit
+  end
+
+  # #Determine Config file to use
+  config_exts = ['.yaml','.yml']
+  configArray = []
+  $logger.info "Checking #{config_folder_path} for config files"
+  #Check config folder for yaml/yml files containing the word 'export'
+  begin
+    Find.find("#{config_folder_path}/") do |file|
+      configArray.append(File.basename(file)) if config_exts.include?(File.extname(file)) && (File.basename(file).include?('export'))
+    end
+  rescue error
+    #No config files found in config folder
+    $logger.error "Error finding default config file path!"
+    $logger.error "Error reported: #{error}"
+    puts "Cannot find config files in default path! (#{pwd})"
+    puts "Exiting script..."
+    gets
+    exit
+  end
+  $logger.info "Found config files"
+
+  #Print config file options with number indicators to select
+  puts "Select your config file"
+  configArray.each_with_index do |cFile, index|
+    puts "#{index+1}) #{cFile}" 
+  end
+  $logger.info "Select section"
+  begin
+    print "Selection (0 to repeat options): "
+    sel = gets.chomp.to_i
+    begin
+      if sel === 0
+        configArray.each_with_index do |cFile, index|
+          puts "#{index+1}) #{cFile}" 
+        end
+        next
+      end
+      configFile = configArray[sel-1]
+      $logger.info "Option #{sel} - #{configFile}"
+      break
+    rescue
+      $logger.info "Error selecting config file! Exiting..."
+      puts "Error selecting config file!"
+      puts "Exiting..."
+      gets
+      exit
+    end
+  end while true
+  return configFile
+end
+
+
+#End method
+
 # determine the directory paths
 platform_template_path = File.dirname(File.expand_path(__FILE__))
-core_path = File.join(platform_template_path, "core")
-task_path = File.join(platform_template_path, "task")
+config_folder_path = File.join(platform_template_path,'config')
+
+if options["CONFIG_FILE"].nil?
+  options["CONFIG_FILE"] = config_selection(config_folder_path)
+end
 
 # ------------------------------------------------------------------------------
 # methods
@@ -112,20 +190,24 @@ end
 # setup
 # ------------------------------------------------------------------------------
 
-logger.info "Installing gems for the \"#{template_name}\" template."
+$logger.info "Installing gems for the \"#{template_name}\" template."
 Dir.chdir(platform_template_path) { system("bundle", "install") }
 
 vars = {}
 file = "#{platform_template_path}/#{options['CONFIG_FILE']}"
 
 # Check if configuration file exists
-logger.info "Validating configuration file."
+$logger.info "Validating configuration file."
 begin
   if File.exist?(file) != true
-    raise "The file \"#{options['CONFIG_FILE']}\" does not exist."
+    file = "#{config_folder_path}/#{options['CONFIG_FILE']}"
+    if File.exist?(file) != true
+      raise "The file \"#{options['CONFIG_FILE']}\" does not exist in the base or config directories."
+    end
   end
 rescue => error
-  logger.info error
+  $logger.info error
+  $logger.info "Exiting..."
   exit
 end
 
@@ -133,11 +215,73 @@ end
 begin
   vars.merge!( YAML.load(File.read(file)) )
 rescue => error
-  logger.info "Error loading YAML configuration"
-  logger.info error
+  $logger.info "Error loading YAML configuration"
+  $logger.info error
+  $logger.info "Exiting..."
+  gets
   exit
 end
-logger.info "Configuration file passed validation."
+$logger.info "Configuration file passed validation."
+
+
+#Check if nil/unencoded and update accordingly
+def SecurePWD(file,vars,pwdAttribute)
+  #If no pwd, then ask for one, otherwise take current string that was not found to be B64 and convert
+  if vars[pwdAttribute]["service_user_password"].nil?
+    password = IO::console.getpass "Enter Password(#{pwdAttribute}): "
+  else
+    password = vars[pwdAttribute]["service_user_password"]
+  end
+  enc = Base64.strict_encode64(password)
+  vars[pwdAttribute]["service_user_password"] = enc.to_s
+  begin
+    fileObj = File.open(file, 'w') 
+    puts "Updated pwd in #{pwdAttribute} to #{enc}"
+    fileObj.write vars.to_yaml
+     #{ |f| f.write vars.to_yaml }
+  rescue ArgumentError
+    $logger.error("There was an error while updating variables file:")
+    $logger.error(ArgumentError)
+  ensure
+    fileObj.close
+  end
+  #TODO - If you cannot properly write an encoded pwd, exit
+end
+
+#Decode password to utilize
+def DecodePWD(file, vars, pwdLoc)
+  pwdAttribute = vars[pwdLoc]["service_user_password"]
+  return Base64.decode64(pwdAttribute)
+end
+
+#Confirm passwords exist and are in a proper format, call SecurePWD for any exceptions
+def ValidatePWD(file, vars)
+  $pwdFields.each do |field|
+    t = vars[field]["service_user_password"]
+    #See if not a string, not encoded, or default <PASSWORD>
+    if !t.is_a?(String) || Base64.strict_encode64(Base64.decode64(t)) != t || t === "<PASSWORD>"
+      puts "Updating password #{t}"
+      SecurePWD(file, vars, field)
+    end
+  end
+end
+
+ValidatePWD(file, vars)
+vars["core"]["service_user_password"] = DecodePWD(file, vars, "core")
+vars["task"]["service_user_password"] = DecodePWD(file, vars, "task")
+
+if vars["core"]["service_user_password"].empty? || vars["core"]["service_user_password"].nil?
+  puts "Core password is blank! Password required. Exiting..."
+  gets
+  exit
+end
+if vars["task"]["service_user_password"].empty? || vars["task"]["service_user_password"].nil?
+  puts "Task password is blank! Password required. Exiting..."
+  gets
+  exit
+end
+
+
 
 # Set http_options based on values provided in the config file.
 http_options = (vars["http_options"] || {}).each_with_object({}) do |(k,v),result|
@@ -148,10 +292,28 @@ end
 SUBMISSIONS_TO_EXPORT = vars["options"]["SUBMISSIONS_TO_EXPORT"]
 REMOVE_DATA_PROPERTIES = vars["options"]["REMOVE_DATA_PROPERTIES"]
 
-# Output the yml file config
-logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
+#Config exports folder exists, if not then create
+if !File.directory?(File.join(platform_template_path,"exports"))
+  Dir.mkdir(File.join(platform_template_path, "exports"))
+end
 
-logger.info "Setting up the SDK"
+#Setting core paths utilzing variables
+if !vars['core']['space_slug'].nil?
+  folderName = vars['core']['space_slug']
+elsif !vars['core']['space_name'].nil?
+  folderName = vars['core']['space_name']
+else
+  puts "No space slug or name provided! Please provide one in order to export..."
+  gets
+  exit
+end
+core_path = File.join(platform_template_path, "exports", folderName, "core")
+task_path = File.join(platform_template_path, "exports", folderName, "task")
+
+# Output the yml file config
+$logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
+
+$logger.info "Setting up the SDK"
  
 space_sdk = KineticSdk::Core.new({
   space_server_url: vars["core"]["server_url"],
@@ -174,7 +336,7 @@ task_sdk = KineticSdk::Task.new({
 
 # Validate Core Connection
 begin
-  logger.info "Validating connection to Core \"#{space_sdk.api_url}\""
+  $logger.info "Validating connection to Core \"#{space_sdk.api_url}\""
   response = space_sdk.me()
   if response.status == 0
       raise response.message
@@ -182,13 +344,13 @@ begin
     raise response.content['error']
   end
 rescue => error
-  logger.info error
+  $logger.info error
   exit
 end
 
 # Validate Task Connection
 begin
-  logger.info "Validating connection to Task \"#{task_sdk.api_url}\""
+  $logger.info "Validating connection to Task \"#{task_sdk.api_url}\""
   response = task_sdk.environment()
   if response.status == 0
     raise response.message
@@ -196,25 +358,26 @@ begin
     raise response.content['error']
   end
 rescue => error
-  logger.info error
+  $logger.info error
   exit
 end
 
-logger.info "Validating connection to Cors and Task was Successful"
+$logger.info "Validating connection to Cors and Task was Successful"
 
 # ------------------------------------------------------------------------------
 # core
 # ------------------------------------------------------------------------------
 
-logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+
+$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{core_path}/*")
 
-logger.info "Setting up the Core SDK"
+$logger.info "Setting up the Core SDK"
 
 # fetch export from core service and write to export directory
-logger.info "Exporting the core components for the \"#{template_name}\" template."
-logger.info "  exporting with api: #{space_sdk.api_url}"
-logger.info "   - exporting configuration data (Kapps,forms, etc)"
+$logger.info "Exporting the core components for the \"#{template_name}\" template."
+$logger.info "  exporting with api: #{space_sdk.api_url}"
+$logger.info "   - exporting configuration data (Kapps,forms, etc)"
 space_sdk.export_space
 
 # cleanup properties that should not be committed with export
@@ -253,10 +416,10 @@ Dir["#{core_path}/**/*.json"].each do |filename|
 end
 
 # export submissions
-logger.info "Exporting and writing submission data"
+$logger.info "Exporting and writing submission data"
 (SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
   is_datastore = item["datastore"] || false
-  logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
+  $logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
   # build directory to write files to
   submission_path = is_datastore ?
     "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
@@ -324,16 +487,16 @@ logger.info "Exporting and writing submission data"
   # close the submissions file
   file.close()
 end
-logger.info "  - submission data export complete"
+$logger.info "  - submission data export complete"
 
 # ------------------------------------------------------------------------------
 # task
 # ------------------------------------------------------------------------------
-logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{task_path}/*")
 
-logger.info "Exporting the task components for the \"#{template_name}\" template."
-logger.info "  exporting with api: #{task_sdk.api_url}"
+$logger.info "Exporting the task components for the \"#{template_name}\" template."
+$logger.info "  exporting with api: #{task_sdk.api_url}"
 
 # export all sources, trees, routines, handlers,
 # groups, policy rules, categories, and access keys
@@ -350,4 +513,4 @@ task_sdk.export_access_keys()
 # complete
 # ------------------------------------------------------------------------------
 
-logger.info "Finished exporting the \"#{template_name}\" template."
+$logger.info "Finished exporting the \"#{template_name}\" template."
