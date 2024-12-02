@@ -368,7 +368,7 @@ $logger.info "Validating connection to Cors and Task was Successful"
 # core
 # ------------------------------------------------------------------------------
 
-
+##Clear old folder/files
 $logger.info "Removing files and folders from the existing \"#{template_name}\" template."
 FileUtils.rm_rf Dir.glob("#{core_path}/*")
 
@@ -415,6 +415,7 @@ Dir["#{core_path}/**/*.json"].each do |filename|
   File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(model)) }
 end
 
+#TODO - Flag for submissions to export
 # export submissions
 $logger.info "Exporting and writing submission data"
 (SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
@@ -507,6 +508,8 @@ task_sdk.find_sources().content['sourceRoots'].each do |source|
   end
 end
 
+#Is above tied to below?
+#TODO - Add flags/logic to have ability to be selective on what's exported/imported
 task_sdk.export_routines()
 task_sdk.export_handlers()
 task_sdk.export_groups()
@@ -519,3 +522,5 @@ task_sdk.export_access_keys()
 # ------------------------------------------------------------------------------
 
 $logger.info "Finished exporting the \"#{template_name}\" template."
+
+

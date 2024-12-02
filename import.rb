@@ -273,8 +273,10 @@ if !File.directory?(File.join(platform_template_path,"exports"))
   Dir.mkdir(File.join(platform_template_path, "exports"))
 end
 
-#Setting core paths utilzing variables
-if !vars['core']['space_slug'].nil?
+#Setting core paths utilzing variables - Check old_space_slug -> space_slug -> space_name
+if !vars['core']['old_space_slug'].nil?
+  folderName = vars['core']['old_space_slug']
+elsif !vars['core']['space_slug'].nil?
   folderName = vars['core']['space_slug']
 elsif !vars['core']['space_name'].nil?
   folderName = vars['core']['space_name']
@@ -1028,31 +1030,45 @@ trees = task_sdk.find_trees().content
 }
 
 # identify Routines in source data
-sourceTrees = []
-Dir["#{task_path}/routines/*.xml"].each {|routine| 
-  doc = Document.new(File.new(routine))
-  root = doc.root
-  sourceTrees.push("#{root.elements["taskTree/name"].text}")
-}
-# identify trees in source data
-Dir["#{task_path}/sources/*"].each {|source| 
-  if File.directory? source
-    Dir["#{source}/trees/*.xml"].each { |tree|
-      doc = Document.new(File.new(tree))
-      root = doc.root
-      tree = "#{root.elements["sourceName"].text} :: #{root.elements["sourceGroup"].text} :: #{root.elements["taskTree/name"].text}"
-      sourceTrees.push(tree)
-    }
-  end
-}
+begin
+  sourceTrees = []
+  Dir["#{task_path}/routines/*.xml"].each {|routine| 
+    doc = REXML::Document.new(File.new(routine))
+    root = doc.root
+    sourceTrees.push("#{root.elements["taskTree/name"].text}")
+  }
+rescue
+  logger.error "Error while identifying routines"
+end
 
-# Delete the extra tress and routines on the source  
-destinationtrees.each { | tree |
-  if vars["options"]["delete"] && !sourceTrees.include?(tree)
-    treeDef = tree.split(' :: ')
-    task_sdk.delete_tree(  tree  )
-  end
-}
+begin
+  # identify trees in source data
+  Dir["#{task_path}/sources/*"].each {|source| 
+    if File.directory? source
+      Dir["#{source}/trees/*.xml"].each { |tree|
+        doc = REXML::Document.new(File.new(tree))
+        root = doc.root
+        tree = "#{root.elements["sourceName"].text} :: #{root.elements["sourceGroup"].text} :: #{root.elements["taskTree/name"].text}"
+        sourceTrees.push(tree)
+      }
+    end
+  }
+rescue
+  logger.error "Error identifying trees"
+end
+
+begin
+  # Delete the extra tress and routines on the source  
+  destinationtrees.each { | tree |
+    if vars["options"]["delete"] && !sourceTrees.include?(tree)
+      treeDef = tree.split(' :: ')
+      task_sdk.delete_tree(  tree  )
+    end
+  }
+rescue
+  logger.error "Error deleting extra trees/routines on source"
+end
+
 
 # Import v6 workflows as these are not not the same as Trees and Routines
 logger.info "Importing workflows"
