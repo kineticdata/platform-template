@@ -310,6 +310,16 @@ end
 core_path = File.join(platform_template_path, "exports", folderName, "core")
 task_path = File.join(platform_template_path, "exports", folderName, "task")
 
+
+#Confirmation of space
+puts "Exporting #{vars['core']['space_name']} to #{folderName} in 5 seconds..."
+4.downto(1) do |n|
+  puts n
+  sleep(1)
+end
+
+
+
 # Output the yml file config
 $logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
 
