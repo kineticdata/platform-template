@@ -300,19 +300,21 @@ logger.info "Exporting and writing submission data"
           submission_id = submission['id']
           # define the dir to contain the attahment
           download_dir = "#{submission_path}/#{submission_id}/#{field}"
-          # evaluate fields with multiple attachments
-          value.map.with_index{ | attachment, index |
-            # create folder to write attachment
-            FileUtils.mkdir_p(download_dir, :mode => 0700)
-            # dir and file name to write attachment
-            download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
-            # url to retrieve the attachment
-            url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
-            # retrieve and write attachment
-            space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
-            # add the "path" key to indicate the attachment's location
-            attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
-          }
+          if value
+            # evaluate fields with multiple attachments
+            value.map.with_index{ | attachment, index |
+              # create folder to write attachment
+              FileUtils.mkdir_p(download_dir, :mode => 0700)
+              # dir and file name to write attachment
+              download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
+              # url to retrieve the attachment
+              url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
+              # retrieve and write attachment
+              space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
+              # add the "path" key to indicate the attachment's location
+              attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
+            }
+          end
         }
         # append each submission (removing the submission unwanted attributes)
         file.puts(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
