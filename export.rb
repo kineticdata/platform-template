@@ -451,52 +451,80 @@ $logger.info "Exporting and writing submission data"
     
   # create folder to write submission data to
   FileUtils.mkdir_p(submission_path, :mode => 0700)
-
-  # build params to pass to the retrieve_form_submissions method
-  params = {"include" => "details,children,origin,parent,values", "limit" => 1000, "direction" => "ASC"}
-
-  # open the submissions file in write mode
-  file = File.open("#{submission_path}/submissions.ndjson", 'w');
-
-  # ensure the file is empty
-  file.truncate(0)
-  response = nil
-  begin
-    # get submissions from datastore form or form
-    response = is_datastore ?
-      space_sdk.find_all_form_datastore_submissions(item['formSlug'], params).content :
-      space_sdk.find_form_submissions(item['kappSlug'], item['formSlug'], params).content
-    if response.has_key?("submissions")
-      # iterate over each submission
-      (response["submissions"] || []).each do |submission|
-        # write each attachment to a a dir
-        submission['values'].select{ |field, value| attachement_files.include?(field)}.each{ |field,value|
-          submission_id = submission['id']
-          # define the dir to contain the attahment
-          download_dir = "#{submission_path}/#{submission_id}/#{field}"
-          # evaluate fields with multiple attachments
-          value.map.with_index{ | attachment, index |
-            # create folder to write attachment
-            FileUtils.mkdir_p(download_dir, :mode => 0700)
-            # dir and file name to write attachment
-            download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
-            # url to retrieve the attachment
-            url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
-            # retrieve and write attachment
-            space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
-            # add the "path" key to indicate the attachment's location
-            attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
-          }
-        }
-        # append each submission (removing the submission unwanted attributes)
-        file.puts(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
-      end
+  
+  processed_submissions = false
+  createdAt = nil
+  # Iterate submissions in case over 1000 exist
+  while !processed_submissions do
+    # build params to pass to the retrieve_form_submissions method
+    params = {"include" => "details,children,origin,parent,values", "limit" => 1000, "direction" => "ASC"}
+    if !createdAt.nil?
+      params["q"] = "createdAt>=\"#{createdAt}\""
     end
-    params['pageToken'] = response['nextPageToken']
-    # get next page of submissions if there are more
-  end while !response.nil? && !response['nextPageToken'].nil?
-  # close the submissions file
-  file.close()
+    # open the submissions file in write mode
+    file = File.open("#{submission_path}/submissions.ndjson", 'w');
+
+    # ensure the file is empty
+    file.truncate(0)
+    response = nil
+    begin
+      # get submissions from datastore form or form
+      response = is_datastore ?
+        space_sdk.find_all_form_datastore_submissions(item['formSlug'], params).content :
+        space_sdk.find_form_submissions(item['kappSlug'], item['formSlug'], params).content
+      if response.has_key?("submissions")
+          # File.write("outputtest.txt","#{response}") 
+          # exit
+        # iterate over each submission
+        (response["submissions"] || []).each do |submission|
+          # write each attachment to a a dir
+          submission['values'].select{ |field, value| attachement_files.include?(field)}.each{ |field,value|
+            submission_id = submission['id']
+            # define the dir to contain the attahment
+            download_dir = "#{submission_path}/#{submission_id}/#{field}"
+            # evaluate fields with multiple attachments
+            value.map.with_index{ | attachment, index |
+              # create folder to write attachment
+              FileUtils.mkdir_p(download_dir, :mode => 0700)
+              # dir and file name to write attachment
+              download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
+              # url to retrieve the attachment
+              url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
+              # retrieve and write attachment
+              space_sdk.stream_download_to_file(download_path, url, {}, space_sdk.default_headers)
+              # add the "path" key to indicate the attachment's location
+              attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
+            }
+          }
+          # append each submission (removing the submission unwanted attributes)
+          file.puts(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
+        end
+      end
+      params['pageToken'] = response['nextPageToken']
+      # get next page of submissions if there are more
+    end while !response.nil? && !response['nextPageToken'].nil?
+    # close the submissions file
+    file.close()
+    # $logger.info "Subs"
+
+    if response["submissions"].count == 1000
+      #Check if another batch exists
+      createdAt = (response["submissions"].last)["createdAt"]
+      # $logger.info "LastSub: #{response["submissions"].last}"
+      $logger.info "New created at #{createdAt}"
+      # $logger.info "Source: #{response["submissions"].last}"
+      # $logger.info "---------------"
+      # $logger.info "All #{response["submissions"]}"
+      # $logger.info "---------------"
+      # $logger.info "#{response["submissions"].count}"
+    else
+      #If not, exit loop
+      $logger.info "Exiting submission loop"
+      processed_submissions = true
+      createdAt = nil
+    end
+
+  end
 end
 $logger.info "  - submission data export complete"
 
@@ -532,5 +560,3 @@ task_sdk.export_access_keys()
 # ------------------------------------------------------------------------------
 
 $logger.info "Finished exporting the \"#{template_name}\" template."
-
-
