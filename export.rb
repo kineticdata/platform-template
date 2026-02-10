@@ -90,6 +90,7 @@ task_path = File.join(platform_template_path, "task")
 # methods
 # ------------------------------------------------------------------------------
 
+# Removes discussion id attribute from a given model
 def remove_discussion_id_attribute(model)
   if !model.is_a?(Array) && !model.nil?
     if model.has_key?("attributes")
