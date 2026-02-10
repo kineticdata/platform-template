@@ -92,13 +92,13 @@ task_path = File.join(platform_template_path, "task")
 
 # Removes discussion id attribute from a given model
 def remove_discussion_id_attribute(model)
-  if !model.is_a?(Array)
+  if !model.is_a?(Array) && !model.nil?
     if model.has_key?("attributes")
       scrubbed = model["attributes"].select do |attribute|
         attribute["name"] != "Discussion Id"
       end
+      model["attributes"] = scrubbed
     end
-    model["attributes"] = scrubbed
   end
   return model
 end
