@@ -141,7 +141,7 @@ options:
   - datastore: # true or false: true for datastore forms false for regular form data exports
     formSlug: # Slug of the datastore or form to have submissions exported
 
-  REMOVE_DATA_PROPERTIES: # The listed properties will be removed the form definition
+  REMOVE_DATA_PROPERTIES: # The listed properties will be removed from each submission
   - createdAt
   - createdBy
   - updatedAt

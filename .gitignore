@@ -7,3 +7,7 @@ exports/*
 Local_Gems/*
 Tools/*
 GrabNGoBundle/*
+*.log
+bundle/*
+vendor/*
+.bundle/*

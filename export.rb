@@ -50,18 +50,25 @@
 
 =end
 
+require_relative './bundle/bundler/setup'
 require 'logger'      #For System Logging
 require 'json'
 require 'optparse'    #For argument parsing
-require 'kinetic_sdk' # Note you may need to run "Gem install Kinetic_sdk"
-require 'Find'        #For config list building
+
+#require 'kinetic_sdk' # Note you may need to run "Gem install Kinetic_sdk"
+require 'find'        #For config list building
 require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
+require 'concurrent-ruby'
+require 'kinetic_sdk'
+# $LOAD_PATH.unshift('C:\Users\travis.wiese\Source\repos\kinetic-sdk-rb\lib')
+
+
 
 template_name = "platform-template"
 $pwdFields = ["core","task"]
-
-$logger = Logger.new(STDERR)
+PWD = File.expand_path(File.dirname(__FILE__))
+$logger = Logger.new(STDERR) # "#{PWD}/output.log"
 $logger.level = Logger::INFO
 $logger.formatter = proc do |severity, datetime, progname, msg|
   date_format = datetime.utc.strftime("%Y-%m-%dT%H:%M:%S.%LZ")
@@ -73,7 +80,7 @@ end
 # Determine the Present Working Directory
 pwd = File.expand_path(File.dirname(__FILE__))
 
-
+starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 # The options specified on the command line will be collected in *options*.
 options = {}
 OptionParser.new do |opts|
@@ -271,11 +278,13 @@ vars["core"]["service_user_password"] = DecodePWD(file, vars, "core")
 vars["task"]["service_user_password"] = DecodePWD(file, vars, "task")
 
 if vars["core"]["service_user_password"].empty? || vars["core"]["service_user_password"].nil?
+  #TODO - Ask for password
   puts "Core password is blank! Password required. Exiting..."
   gets
   exit
 end
 if vars["task"]["service_user_password"].empty? || vars["task"]["service_user_password"].nil?
+  #TODO - Ask for password
   puts "Task password is blank! Password required. Exiting..."
   gets
   exit
@@ -325,7 +334,7 @@ $logger.info "Output of Configuration File: \r #{JSON.pretty_generate(vars)}"
 
 $logger.info "Setting up the SDK"
  
-space_sdk = KineticSdk::Core.new({
+$space_sdk = KineticSdk::Core.new({
   space_server_url: vars["core"]["server_url"],
   space_slug: vars["core"]["space_slug"],
   username: vars["core"]["service_user_username"],
@@ -388,184 +397,242 @@ $logger.info "Setting up the Core SDK"
 $logger.info "Exporting the core components for the \"#{template_name}\" template."
 $logger.info "  exporting with api: #{$space_sdk.api_url}"
 $logger.info "   - exporting configuration data (Kapps,forms, etc)"
-$space_sdk.export_space
+core_thread = Thread.new do
+  $space_sdk.export_space
+  # cleanup properties that should not be committed with export
+  # bridge keys
+  max_threads=30
+  pool = Concurrent::FixedThreadPool.new(max_threads)
+  promises = []
 
-# cleanup properties that should not be committed with export
-# bridge keys
-Dir["#{core_path}/space/bridges/*.json"].each do |filename|
-  bridge = JSON.parse(File.read(filename))
-  if bridge.has_key?("key")
-    bridge.delete("key")
-    File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(bridge)) }
-  end
-end
+  Dir["#{core_path}/space/bridges/*.json"].each do |filename|
+    promises << Concurrent::Promise.execute(executor: pool) do
 
-# cleanup space
-filename = "#{core_path}/space.json"
-space = JSON.parse(File.read(filename))
-# filestore key
-if space.has_key?("filestore") && space["filestore"].has_key?("key")
-  space["filestore"].delete("key")
-end
-# platform components
-if space.has_key?("platformComponents")
-  if space["platformComponents"].has_key?("task")
-    space["platformComponents"].delete("task")
-  end 
-  (space["platformComponents"]["agents"] || []).each_with_index do |agent,idx|
-    space["platformComponents"]["agents"][idx]["url"] = ""
-  end
-end
-# rewrite the space file
-File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(space)) }
-
-# cleanup discussion ids
-Dir["#{core_path}/**/*.json"].each do |filename|
-  model = remove_discussion_id_attribute(JSON.parse(File.read(filename)))
-  File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(model)) }
-end
-
-#TODO - Flag for submissions to export
-# export submissions
-$logger.info "Exporting and writing submission data"
-(SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
-  is_datastore = item["datastore"] || false
-  $logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
-  # build directory to write files to
-  submission_path = is_datastore ?
-    "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
-    "#{core_path}/space/kapps/#{item['kappSlug']}/forms/#{item['formSlug']}"
-  
-  # get attachment fields from form definition
-  attachment_form = is_datastore ?
-    $space_sdk.find_datastore_form(item['formSlug'], {"include" => "fields.details"}) :
-    $space_sdk.find_form(item['kappSlug'], item['formSlug'], {"include" => "fields.details"})
-  
-  # get attachment fields from form definition
-  attachement_files = attachment_form.status == 200 ? attachment_form.content['form']['fields'].select{ | file | file['dataType'] == "file" }.map { | field | field['name']  } : {}
-  
-  # set base url for attachments
-  attachment_base_url = is_datastore ?
-    "#{$space_sdk.api_url.gsub("/app/api/v1", "")}/app/datastore" :
-    "#{$space_sdk.api_url.gsub("/app/api/v1", "")}"
-    
-  # create folder to write submission data to
-  FileUtils.mkdir_p(submission_path, :mode => 0700)
-  
-
-  # open the submissions file in write mode
-  file = File.open("#{submission_path}/submissions.ndjson", 'w');
-  # ensure the file is empty
-  file.truncate(0)
-  file.close()
-  file = File.open("#{submission_path}/submissions.ndjson", 'a');
-  processed_submissions = false
-  createdAt = Time.now
-  previous = nil
-  # dataBlock = {}
-  # Iterate submissions in case over 1000 exist
-  while !processed_submissions && !createdAt.nil? do
-    # build params to pass to the retrieve_form_submissions method
-    params = {"include" => "details,children,origin,parent,values", "limit" => 1000, "direction" => "ASC"}
-    if !createdAt.nil?
-      params["q"] = "createdAt>=\"#{createdAt}\""
-    end
-
-    response = nil
-    begin
-      # get submissions from datastore form or form
-      response = is_datastore ?
-        $space_sdk.find_all_form_datastore_submissions(item['formSlug'], params).content :
-        $space_sdk.find_form_submissions(item['kappSlug'], item['formSlug'], params).content
-      if response.has_key?("submissions")
-          # File.write("outputtest.txt","#{response}") 
-          # exit
-        # iterate over each submission
-        (response["submissions"] || []).each do |submission|
-          # write each attachment to a a dir
-          submission['values'].select{ |field, value| attachement_files.include?(field)}.each{ |field,value|
-            submission_id = submission['id']
-            # define the dir to contain the attahment
-            download_dir = "#{submission_path}/#{submission_id}/#{field}"
-            # evaluate fields with multiple attachments
-            value.map.with_index{ | attachment, index |
-              # create folder to write attachment
-              FileUtils.mkdir_p(download_dir, :mode => 0700)
-              # dir and file name to write attachment
-              download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
-              # url to retrieve the attachment
-              url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
-              # retrieve and write attachment
-              $space_sdk.stream_download_to_file(download_path, url, {}, $space_sdk.default_headers)
-              # add the "path" key to indicate the attachment's location
-              attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
-            }
-          }
-          # append each submission (removing the submission unwanted attributes)
-          # dataBlock = dataBlock.merge(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
-          json_string = JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)})
-          unless json_string == previous
-            file.puts(json_string)
-            previous = json_string
-          end
-          # file.puts(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
+      begin
+        bridge = JSON.parse(File.read(filename))
+        if bridge.has_key?("key")
+          bridge.delete("key")
+          File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(bridge)) }
         end
+
       end
-      params['pageToken'] = response['nextPageToken']
-      # get next page of submissions if there are more
-    end while !response.nil? && !response['nextPageToken'].nil?
-    # close the submissions file
-    # file.close()
-    # $logger.info "Subs"
-
-    if response["submissions"].count == 1000
-      #Check if another batch exists
-      createdAt = (response["submissions"].last)["createdAt"]
-      # $logger.info "LastSub: #{response["submissions"].last}"
-      $logger.debug "New created at #{createdAt}"
-    else
-      #If not, exit loop
-      $logger.debug "Exiting submission loop"
-      processed_submissions = true
-      createdAt = nil
     end
-
   end
-  file.close()
-  #Write to file
-  # file.puts(dataBlock)
+  promises.each(&:wait!)
+
+
+  # cleanup space
+  filename = "#{core_path}/space.json"
+  space = JSON.parse(File.read(filename))
+  # filestore key
+  if space.has_key?("filestore") && space["filestore"].has_key?("key")
+    space["filestore"].delete("key")
+  end
+  # platform components
+  if space.has_key?("platformComponents")
+    if space["platformComponents"].has_key?("task")
+      space["platformComponents"].delete("task")
+    end 
+    (space["platformComponents"]["agents"] || []).each_with_index do |agent,idx|
+      space["platformComponents"]["agents"][idx]["url"] = ""
+    end
+  end
+  # rewrite the space file
+  File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(space)) }
+
+  # cleanup discussion ids
+  dir_promises = []
+  Dir["#{core_path}/**/*.json"].each do |filename|
+    dir_promises << Concurrent::Promise.execute(executor: pool) do
+      model = remove_discussion_id_attribute(JSON.parse(File.read(filename)))
+      File.open(filename, 'w') { |file| file.write(JSON.pretty_generate(model)) }
+    end
+  end
+  dir_promises.each(&:wait!)
+
+
+  ####################################################################
+  ## Look to method and thread here
+  ####################################################################
+
+  #TODO - Flag for submissions to export
+  # export submissions
+  $logger.info "Exporting and writing submission data"
+  (SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
+    promises << Concurrent::Promise.execute(executor: pool) do
+      is_datastore = item["datastore"] || false
+      $logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
+      # build directory to write files to
+      submission_path = is_datastore ?
+        "#{core_path}/space/datastore/forms/#{item['formSlug']}" :
+        "#{core_path}/space/kapps/#{item['kappSlug']}/forms/#{item['formSlug']}"
+      
+      # get attachment fields from form definition
+      attachment_form = is_datastore ?
+        $space_sdk.find_datastore_form(item['formSlug'], {"include" => "fields.details"}) :
+        $space_sdk.find_form(item['kappSlug'], item['formSlug'], {"include" => "fields.details"})
+      
+      # get attachment fields from form definition
+      attachement_files = attachment_form.status == 200 ? attachment_form.content['form']['fields'].select{ | file | file['dataType'] == "file" }.map { | field | field['name']  } : {}
+      
+      # set base url for attachments
+      attachment_base_url = is_datastore ?
+        "#{$space_sdk.api_url.gsub("/app/api/v1", "")}/app/datastore" :
+        "#{$space_sdk.api_url.gsub("/app/api/v1", "")}"
+        
+      # create folder to write submission data to
+      FileUtils.mkdir_p(submission_path, :mode => 0700)
+      
+
+      # open the submissions file in write mode
+      file = File.open("#{submission_path}/submissions.ndjson", 'w');
+      # ensure the file is empty
+      file.truncate(0)
+      file.close()
+      file = File.open("#{submission_path}/submissions.ndjson", 'a');
+      processed_submissions = false
+      createdAt = Time.now
+      previous = nil
+      # dataBlock = {}
+      # ---------------------------------------------------
+      # Iterate submissions in case over 1000 exist
+      # ---------------------------------------------------
+      while !processed_submissions && !createdAt.nil? do
+        # build params to pass to the retrieve_form_submissions method
+        params = {"include" => "details,children,origin,parent,values", "limit" => 1000, "direction" => "ASC"}
+        if !createdAt.nil?
+          params["q"] = "createdAt>=\"#{createdAt}\""
+        end
+
+        response = nil
+        begin
+          # get submissions from datastore form or form
+          response = is_datastore ?
+            $space_sdk.find_all_form_datastore_submissions(item['formSlug'], params).content :
+            $space_sdk.find_form_submissions(item['kappSlug'], item['formSlug'], params).content
+          if response.has_key?("submissions")
+              # File.write("outputtest.txt","#{response}") 
+              # exit
+            # iterate over each submission
+            (response["submissions"] || []).each do |submission|
+              # write each attachment to a a dir
+              submission['values'].select{ |field, value| attachement_files.include?(field)}.each{ |field,value|
+                submission_id = submission['id']
+                # define the dir to contain the attahment
+                download_dir = "#{submission_path}/#{submission_id}/#{field}"
+                # evaluate fields with multiple attachments
+                value.map.with_index{ | attachment, index |
+                  # create folder to write attachment
+                  FileUtils.mkdir_p(download_dir, :mode => 0700)
+                  # dir and file name to write attachment
+                  download_path = "#{download_dir}/#{File.join(".", attachment['name'])}"
+                  # url to retrieve the attachment
+                  url = "#{attachment_base_url}/submissions/#{submission_id}/files/#{ERB::Util.url_encode(field)}/#{index}/#{ERB::Util.url_encode(attachment['name'])}"
+                  # retrieve and write attachment
+                  $space_sdk.stream_download_to_file(download_path, url, {}, $space_sdk.default_headers)
+                  # add the "path" key to indicate the attachment's location
+                  attachment['path'] = "/#{submission_id}/#{field}/#{attachment['name']}"
+                }
+              }
+              # append each submission (removing the submission unwanted attributes)
+              # dataBlock = dataBlock.merge(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
+              json_string = JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)})
+              unless json_string == previous
+                file.puts(json_string)
+                previous = json_string
+              end
+              # file.puts(JSON.generate(submission.delete_if { |key, value| REMOVE_DATA_PROPERTIES.member?(key)}))
+            end
+          end
+          params['pageToken'] = response['nextPageToken']
+          # get next page of submissions if there are more
+        end while !response.nil? && !response['nextPageToken'].nil?
+        # close the submissions file
+        # file.close()
+        # $logger.info "Subs"
+
+        if response["submissions"].count == 1000
+          #Check if another batch exists
+          createdAt = (response["submissions"].last)["createdAt"]
+          # $logger.info "LastSub: #{response["submissions"].last}"
+          $logger.debug "New created at #{createdAt}"
+        else
+          #If not, exit loop
+          $logger.debug "Exiting submission loop"
+          processed_submissions = true
+          createdAt = nil
+        end
+
+      end
+      file.close()
+      #Write to file
+      # file.puts(dataBlock)
+    end
+  end
+  promises.each(&:wait!)
+  pool.shutdown
+  pool.wait_for_termination
+  $logger.info "  - submission data export complete"
 end
-$logger.info "  - submission data export complete"
+
+
 
 # ------------------------------------------------------------------------------
 # task
 # ------------------------------------------------------------------------------
-$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
-FileUtils.rm_rf Dir.glob("#{task_path}/*")
+task_thread = Thread.new do
 
-$logger.info "Exporting the task components for the \"#{template_name}\" template."
-$logger.info "  exporting with api: #{$task_sdk.api_url}"
+  max_threads=30
+  pool = Concurrent::FixedThreadPool.new(max_threads)
+  $logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+  FileUtils.rm_rf Dir.glob("#{task_path}/*")
 
-# export all sources, trees, routines, handlers,
-# groups, policy rules, categories, and access keys
-$task_sdk.export_sources()
-$task_sdk.find_sources().content['sourceRoots'].each do |source|
-  $task_sdk.find_trees({ "source" => source['name'] }).content['trees'].each do |tree|
-    $task_sdk.export_tree(tree['title'])
+  $logger.info "Exporting the task components for the \"#{template_name}\" template."
+  $logger.info "  exporting with api: #{$task_sdk.api_url}"
+
+  # export all sources, trees, routines, handlers,
+  # groups, policy rules, categories, and access keys
+  tree_promises = []
+  $task_sdk.find_sources().content['sourceRoots'].each do |source|
+    $task_sdk.find_trees({ "source" => source['name'], "limit" => 1000 }).content['trees'].each do |tree|
+      tree_promises << Concurrent::Promise.execute(executor: pool) do
+        $task_sdk.export_tree(tree['title'])
+      end
+    end
   end
+  tree_promises.each(&:wait!)
+
+  #Is above tied to below?
+  #TODO - Add flags/logic to have ability to be selective on what's exported/imported
+  task_promises = [
+    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_sources() },
+    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_groups() },
+    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_policy_rules() },
+    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_categories() },
+    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_access_keys() }
+  ]
+  #NOTE - HARD LIMIT AT 1000 - would need date iteration for more
+  $task_sdk.find_handlers({ "limit" => 1000 }).content["handlers"].each do |handler|
+    task_promises << Concurrent::Promise.execute(executor: pool) do
+      $task_sdk.export_handler(handler['definitionId'])
+    end
+  end
+  #NOTE - HARD LIMIT AT 1000 - would need date iteration for more
+  $task_sdk.find_routines({ "limit" => 1000 }).content["trees"].each do |routine|
+    task_promises << Concurrent::Promise.execute(executor: pool) do
+      $task_sdk.export_tree(routine['title'])
+    end
+  end
+  task_promises.each(&:wait!)
+  pool.shutdown
+  pool.wait_for_termination
 end
-
-#Is above tied to below?
-#TODO - Add flags/logic to have ability to be selective on what's exported/imported
-$task_sdk.export_routines()
-$task_sdk.export_handlers()
-$task_sdk.export_groups()
-$task_sdk.export_policy_rules()
-$task_sdk.export_categories()
-$task_sdk.export_access_keys()
-
 # ------------------------------------------------------------------------------
 # complete
 # ------------------------------------------------------------------------------
-
+core_thread.join
+task_thread.join
 $logger.info "Finished exporting the \"#{template_name}\" template."
+ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+elapsed = ending - starting
+puts "Time: #{elapsed}"
