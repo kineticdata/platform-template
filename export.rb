@@ -50,7 +50,7 @@
 
 =end
 
-require_relative './bundle/bundler/setup'
+#require_relative './bundle/bundler/setup'
 require 'logger'      #For System Logging
 require 'json'
 require 'optparse'    #For argument parsing
