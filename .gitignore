@@ -9,5 +9,4 @@ Tools/*
 GrabNGoBundle/*
 *.log
 bundle/*
-vendor/*
 .bundle/*

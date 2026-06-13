@@ -36,17 +36,18 @@
     log_level: info
     log_output: stderr
 =end
+#require_relative './bundle/bundler/setup'
 require 'logger'      #For System Logging
 require 'json'
 require 'rexml/document'
 require 'optparse'    #For argument parsing
 # require 'kinetic_sdk'
-require 'Find'        #For config list building
+require 'find'        #For config list building
 require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
 require 'concurrent-ruby'
 
-$LOAD_PATH.unshift('C:\Users\travis.wiese\Source\repos\kinetic-sdk-rb\lib')
+
 require 'kinetic_sdk'
 
 
@@ -138,7 +139,7 @@ def import_space()
   end
   $logger.info "Configuration file passed validation."
 
-
+  vars["options"] ||= {}
 
   ValidatePWD(file, vars)
   #Will confirm there is a valid, encoded password and decode. Otherwise it will prompt/encode pwd and return decoded variant
@@ -230,8 +231,15 @@ def import_space()
     kpromises << Concurrent::Promise.execute(executor: $pool) do
       begin
         kapp_slug = file.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
-        next if kapps_array.include?(kapp_slug) # If the loop has already iterated over the kapp from the kapp file or the kapp dir skip the iteration
-        kapps_array.push(kapp_slug) # Append the kapp_slug to an array so a duplicate iteration doesn't occur
+        already_processed = $mutex.synchronize do
+          if kapps_array.include?(kapp_slug)
+            true
+          else
+            kapps_array.push(kapp_slug)
+            false
+          end
+        end
+        next if already_processed
         kapp = {}
         kapp['slug'] = kapp_slug # set kapp_slug
           
@@ -246,16 +254,16 @@ def import_space()
         end 
 
 
-        import_kapp_attribute_definitions(core_path, kapp)
-        import_kapp_form_attribute_definitions(core_path,kapp)      
-        import_kapp_form_type_definitions(core_path,kapp)
-        
-        import_kapp_security_policy_definitions(core_path, kapp)
-        
+        import_kapp_attribute_definitions(core_path, kapp, vars)
+        import_kapp_form_attribute_definitions(core_path, kapp, vars)
+        import_kapp_form_type_definitions(core_path, kapp, vars)
+
+        import_kapp_security_policy_definitions(core_path, kapp, vars)
+
         # ------------------------------------------------------------------------------
         # Migrate Kapp Categories
         # ------------------------------------------------------------------------------
-        import_kapp_categories(core_path)
+        import_kapp_categories(core_path, kapp, vars)
 
         
 
@@ -263,15 +271,13 @@ def import_space()
         # import space webhooks
         # ------------------------------------------------------------------------------
         sourceSpaceWebhooksArray = []
-        destinationSpaceWebhooksArray = ($space_sdk.find_webhooks_on_space({"include"=>"details"}).content['webhooks'] || {}).map{ |webhook| {"name" => webhook['name'], "updatedAt"=>webhook['updatedAt']} }
+        destinationSpaceWebhooksNames = ($space_sdk.find_webhooks_on_space({"include"=>"details"}).content['webhooks'] || {}).map { |webhook| webhook['name'] }
 
-        Dir["#{core_path}/space/webhooks/*.json"].each{ |file|
+        Dir["#{core_path}/space/webhooks/*.json"].each { |file|
           webhook = JSON.parse(File.read(file))
-          destinationWebhook = destinationSpaceWebhooksArray.find {|destination_webhook| destination_webhook['name'] == webhook['name']}
-          if destinationSpaceWebhooksArray.include?(webhook['name'])
-            
+          if destinationSpaceWebhooksNames.include?(webhook['name'])
             $space_sdk.update_webhook_on_space(webhook['name'], webhook)
-          elsif
+          else
             $space_sdk.add_webhook_on_space(webhook)
           end
           sourceSpaceWebhooksArray.push(webhook['name'])
@@ -282,11 +288,11 @@ def import_space()
         # TODO: A method doesn't exist for deleting the webhook
         # ------------------------------------------------------------------------------
 
-        destinationSpaceWebhooksArray.each do |webhook|
+        destinationSpaceWebhooksNames.each do |webhook|
           if vars["options"]["delete"] && !sourceSpaceWebhooksArray.include?(webhook)
             $space_sdk.delete_webhook_on_space(webhook)
           end
-        end    
+        end
 
         # ------------------------------------------------------------------------------
         # Migrate Kapp Webhooks
@@ -329,18 +335,14 @@ def import_space()
         # Import Kapp Form Data
         # ------------------------------------------------------------------------------
         
-        import_kapp_form_data(core_path,kapp)
-        import_kapp_web_apis(core_path,kapp)
-        
-        # ------------------------------------------------------------------------------
-        # Delete Kapp Web APIs
-        # ------------------------------------------------------------------------------
-        destinationWebApisArray.each { | webApi |
-          if vars["options"]["delete"] && !sourceWebApisArray.include?(webApi)
-              $space_sdk.delete_kapp_webapi(kapp['slug'], webApi)
-          end
-        }
-      rescue
+        import_kapp_form_data(core_path, kapp)
+        import_kapp_web_apis(core_path, kapp, vars)
+      rescue => e
+        slug_for_log = (defined?(kapp) && kapp.is_a?(Hash) ? kapp['slug'] : nil) || (defined?(kapp_slug) ? kapp_slug : 'unknown')
+        $mutex.synchronize do
+          $logger.error "Error processing kapp '#{slug_for_log}': #{e.class}: #{e.message}"
+          $logger.error e.backtrace.join("\n")
+        end
       end
     end
 
@@ -391,15 +393,14 @@ def import_space()
   # ------------------------------------------------------------------------------
 
   sourceCategories = [] #From import data
-  destinationCategories = ($task_sdk.find_categories().content['categories'] || {}).map{ |category| {'category'=>category['name'],'updatedAt'=>category['updatedAt']}}
+  destinationCategoryNames = ($task_sdk.find_categories().content['categories'] || {}).map{ |category| category['name'] }
 
-  #TODO - No updatedAt in category file
   Dir["#{task_path}/categories/*.json"].each { |file|
     category = JSON.parse(File.read(file))
 
     sourceCategories.push(category['name'])
 
-    if destinationCategories.include?(category['name'])
+    if destinationCategoryNames.include?(category['name'])
       $task_sdk.update_category(category['name'], category)
     else
       $task_sdk.add_category(category)
@@ -410,11 +411,11 @@ def import_space()
   # delete task categories
   # ------------------------------------------------------------------------------
 
-  destinationCategories.each { |category|
+  destinationCategoryNames.each { |category|
     if vars["options"]["delete"] && !sourceCategories.include?(category)
       $task_sdk.delete_category(category)
     end
-  } 
+  }
 
   # ------------------------------------------------------------------------------
   # import task policy rules
@@ -458,8 +459,8 @@ def import_space()
   # identify Routines in source data
   begin
     sourceTrees = []
-    Dir["#{task_path}/routines/*.xml"].each {|routine| 
-      doc = REXML::Document.new(File.new(routine))
+    Dir["#{task_path}/routines/*.xml"].each {|routine|
+      doc = REXML::Document.new(File.read(routine))
       root = doc.root
       sourceTrees.push("#{root.elements["taskTree/name"].text}")
     }
@@ -472,7 +473,7 @@ def import_space()
     Dir["#{task_path}/sources/*"].each {|source| 
       if File.directory? source
         Dir["#{source}/trees/*.xml"].each { |tree|
-          doc = REXML::Document.new(File.new(tree))
+          doc = REXML::Document.new(File.read(tree))
           root = doc.root
           tree = "#{root.elements["sourceName"].text} :: #{root.elements["sourceGroup"].text} :: #{root.elements["taskTree/name"].text}"
           sourceTrees.push(tree)
@@ -705,10 +706,9 @@ end
 
   def import_datastore_forms( core_path)
     $logger.info "Importing datastore forms for #{vars["core"]["space_slug"]}"
-    #TODO - Suffers from 1000 query limit
     destinationDatastoreForms = [] #From destination server
     sourceDatastoreForms = [] #From import data
-    destinationDatastoreForms = ($space_sdk.find_datastore_forms().content['forms'] || {}).map{ |datastore| datastore['slug']}
+    destinationDatastoreForms = fetch_all_datastore_forms.map { |datastore| datastore['slug'] }
     Dir["#{core_path}/space/datastore/forms/*.json"].each { |datastore|
       body = JSON.parse(File.read(datastore))
       sourceDatastoreForms.push(body['slug'])
@@ -746,7 +746,7 @@ end
       ($space_sdk.find_all_form_datastore_submissions(form_slug).content['submissions'] || []).each { |submission|
         $space_sdk.delete_datastore_submission(submission['id'])
       }
-      File.readlines(filename).each { |line|
+      File.foreach(filename) { |line|
         submission = JSON.parse(line) 
         submission["values"].map { |field, value|
             # if the value contains an array of files
@@ -808,7 +808,7 @@ end
   # ------------------------------------------------------------------------------
   # Import Kapp Categories
   # ------------------------------------------------------------------------------
-  def import_kapp_categories(core_path)
+  def import_kapp_categories(core_path, kapp, vars)
     if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categories.json")
       sourceCategoryArray = []
       destinationCategoryArray = ($space_sdk.find_categories(kapp['slug']).content['categories'] || {}).map { |definition|  definition['slug']}
@@ -857,7 +857,7 @@ end
       Find.find("#{config_folder_path}/") do |file|
         configArray.append(File.basename(file)) if config_exts.include?(File.extname(file)) && (File.basename(file).include?('import'))
       end
-    rescue error
+    rescue => error
       #No config files found in config folder
       $logger.error "Error finding default config file path!"
       $logger.error "Error reported: #{error}"
@@ -901,7 +901,7 @@ end
   #Check if nil/unencoded and update accordingly
 def SecurePWD(file,vars,pwdAttribute)
   #If no pwd, then ask for one, otherwise take current string that was not found to be B64 and convert
-  if [pwdAttribute]["service_user_password"].nil?
+  if vars[pwdAttribute]["service_user_password"].nil?
     password = IO::console.getpass "Enter Password(#{pwdAttribute}): "
   else
     password = vars[pwdAttribute]["service_user_password"]
@@ -960,7 +960,7 @@ def convert_json_to_csv(json_file)
   # ------------------------------------------------------------------------------
   # Migrate Kapp Form Attribute Definitions
   # ------------------------------------------------------------------------------
-  def import_kapp_form_attribute_definitions(core_path,kapp)
+  def import_kapp_form_attribute_definitions(core_path, kapp, vars)
     if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/formAttributeDefinitions.json")
       sourceFormAttributeArray = []
       destinationFormAttributeArray = ($space_sdk.find_form_attribute_definitions(kapp['slug']).content['formAttributeDefinitions'] || {}).map { |definition|  definition['name']}
@@ -996,7 +996,7 @@ def convert_json_to_csv(json_file)
       body = JSON.parse(File.read(model))
       if destinationModels_Array.include?(body['name'])
         $space_sdk.update_bridge_model(body['name'], body)
-      elsif
+      else
         $space_sdk.add_bridge_model(body)
       end
     }
@@ -1018,21 +1018,17 @@ def convert_json_to_csv(json_file)
           dir = File.dirname(filename)
           form_slug = filename.match(/forms\/(.+)\/submissions\.ndjson/)[1]
 
-          #TODO - Get path to ndjson
-          #Convert to csv
-          #Import CSV
-          convert_json_to_csv(filename)
-          $space_sdk.import_submissions_csv(kapp['slug'],form_slug,body).content
+          #TODO - Convert to CSV upload path. Disabled until import_submissions_csv signature/body are wired up.
+          # convert_json_to_csv(filename)
+          # $space_sdk.import_submissions_csv(kapp['slug'], form_slug, body).content
 
-          #How much of the code below do I need to integrate with above?
-          
           ## This code could delete all submissions from the form before importing new data
           ## It is commented out because it could be dangerous to have in place and the delete_submission method doesn't exist currently.
           #($space_sdk.find_all_form_submissions(kapp['slug'], form_slug).content['submissions'] || []).each { |submission|
           #  $space_sdk.delete_submission(submission['id'])
           #}
-          
-          File.readlines(filename).each { |line|
+
+          File.foreach(filename) { |line|
             submission = JSON.parse(line) 
             submission["values"].map { |field, value|
                 # if the value contains an array of files
@@ -1091,7 +1087,7 @@ def convert_json_to_csv(json_file)
   # ------------------------------------------------------------------------------
   # Migrate Kapp Attribute Definitions
   # ------------------------------------------------------------------------------
-  def import_kapp_attribute_definitions(core_path,kapp)
+  def import_kapp_attribute_definitions(core_path,kapp, vars)
     if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/kappAttributeDefinitions.json")
       sourceKappAttributeArray = []
       destinationKappAttributeArray = ($space_sdk.find_kapp_attribute_definitions(kapp['slug']).content['kappAttributeDefinitions'] || {}).map { |definition|  definition['name']}
@@ -1115,21 +1111,55 @@ def convert_json_to_csv(json_file)
     end
   end
   # ------------------------------------------------------------------------------
+  # Page through find_forms; returns the merged array of form hashes.
+  # ------------------------------------------------------------------------------
+  def fetch_all_forms(kapp_slug, params={})
+    results = []
+    params = params.merge('limit' => 1000)
+    loop do
+      response = $space_sdk.find_forms(kapp_slug, params)
+      break unless response.code.to_i == 200
+      results.concat(response.content['forms'] || [])
+      token = response.content['nextPageToken']
+      break if token.nil?
+      params['pageToken'] = token
+    end
+    results
+  end
+
+  # ------------------------------------------------------------------------------
+  # Page through find_datastore_forms; returns the merged array of form hashes.
+  # ------------------------------------------------------------------------------
+  def fetch_all_datastore_forms(params={})
+    results = []
+    params = params.merge('limit' => 1000)
+    loop do
+      response = $space_sdk.find_datastore_forms(params)
+      break unless response.code.to_i == 200
+      results.concat(response.content['forms'] || [])
+      token = response.content['nextPageToken']
+      break if token.nil?
+      params['pageToken'] = token
+    end
+    results
+  end
+
+  # ------------------------------------------------------------------------------
   # Import Kapp Forms
   # ------------------------------------------------------------------------------
   def import_forms(core_path,kapp, vars)
     if (forms = Dir["#{core_path}/space/kapps/#{kapp['slug']}/forms/*.json"]).length > 0 
       sourceForms = [] #From import data
       #destinationForms = ($space_sdk.find_forms(kapp['slug']).content['forms'] || {}).map{ |form| form['slug']}
-      destinationForms = ($space_sdk.find_forms(kapp['slug'],{'export'=>'true'}).content['forms'] || {})
+      destinationForms = fetch_all_forms(kapp['slug'], {'export'=>'true'})
       $logger.info ("Iterating kapp forms")
       promises = []
 
 
-      forms.each do |form|
+      forms.each do |form_file|
         promises << Concurrent::Promise.execute(executor: $pool) do
           begin
-            properties = File.read(form)
+            properties = File.read(form_file)
             form = JSON.parse(properties)
             $mutex.synchronize do
                 $logger.info "Currently #{form['slug']}"
@@ -1142,7 +1172,9 @@ def convert_json_to_csv(json_file)
               #$space_sdk.compare_forms(destinationForms["#{form['slug']}"], form )
               #Check last updated date/time and compare
               $mutex.synchronize { $logger.info("Comparing previous and current form exports for #{form['slug']}") }
-              match = (form == prev_form)
+              match = !form['updatedAt'].nil? &&
+                      !prev_form['updatedAt'].nil? &&
+                      form['updatedAt'] == prev_form['updatedAt']
               #Skip if forms match
               if !match
                 $mutex.synchronize { $logger.info("Updating form #{form['slug']}") }
@@ -1150,13 +1182,13 @@ def convert_json_to_csv(json_file)
               else
                 $mutex.synchronize { $logger.info("Form #{form['slug']} updatedAt values match, skipping...") }
               end
-            else   
+            else
               $mutex.synchronize { $logger.info("Adding new form #{form['slug']}") }
               $space_sdk.add_form(kapp['slug'], form)
             end
           rescue => e
             $mutex.synchronize do
-              $logger.error("Failed to import form from #{form_file}: #{e.message}")
+              $logger.error("Failed to import form from #{form_file}: #{e.class}: #{e.message}")
               $logger.error(e.backtrace.join("\n"))
             end
             raise
@@ -1165,24 +1197,24 @@ def convert_json_to_csv(json_file)
       end
 
       promises.each(&:wait!)
-        
+
       $mutex.synchronize { $logger.info("Finished importing #{sourceForms.size} forms for kapp #{kapp['slug']}") }
-    
+
       # ------------------------------------------------------------------------------
       # delete forms
       # ------------------------------------------------------------------------------
-      destinationForms.each { |slug|
-        if vars["options"]["delete"] && !sourceForms.include?(slug)
+      destinationForms.each { |dest_form|
+        if vars["options"]["delete"] && !sourceForms.include?(dest_form["slug"])
           #Delete form is disabled
-          #$space_sdk.delete_form(kapp['slug'], slug)
+          #$space_sdk.delete_form(kapp['slug'], dest_form["slug"])
         end
-      } 
+      }
     end
   end
   # ------------------------------------------------------------------------------
   # Migrate Kapp Category Definitions
   # ------------------------------------------------------------------------------
-  def import_kapp_category_definitions(core_path,kapp)
+  def import_kapp_category_definitions(core_path,kapp,vars)
     if File.file?(file = "#{core_path}/space/kapps/#{kapp['slug']}/categoryAttributeDefinitions.json")
       sourceKappCategoryArray = []
       destinationKappAttributeArray = ($space_sdk.find_category_attribute_definitions(kapp['slug']).content['categoryAttributeDefinitions'] || {}).map { |definition|  definition['name']}  
@@ -1206,7 +1238,7 @@ def convert_json_to_csv(json_file)
     end
   end
 
-  def import_kapp_form_type_definitions(core_pathh,kapp)
+  def import_kapp_form_type_definitions(core_path, kapp, vars)
     # ------------------------------------------------------------------------------
     # Migrate Kapp Form Type Definitions
     # ------------------------------------------------------------------------------
@@ -1232,10 +1264,10 @@ def convert_json_to_csv(json_file)
       }
     end
   end
-  def import_kapp_web_apis(core_path,kapp)
+  def import_kapp_web_apis(core_path, kapp, vars)
     # ------------------------------------------------------------------------------
     # Add Kapp Web APIs
-    # ------------------------------------------------------------------------------   
+    # ------------------------------------------------------------------------------
     sourceWebApisArray = []
     destinationWebApisArray = ($space_sdk.find_kapp_webapis(kapp['slug']).content['webApis'] || {}).map { |definition|  definition['slug']}
     Dir["#{core_path}/space/kapps/#{kapp['slug']}/webApis/*"].each { |webApi|
@@ -1247,9 +1279,17 @@ def convert_json_to_csv(json_file)
       end
       sourceWebApisArray.push(body['slug'])
     }
+    # ------------------------------------------------------------------------------
+    # Delete Kapp Web APIs not present in source
+    # ------------------------------------------------------------------------------
+    destinationWebApisArray.each { |webApi|
+      if vars["options"]["delete"] && !sourceWebApisArray.include?(webApi)
+        $space_sdk.delete_kapp_webapi(kapp['slug'], webApi)
+      end
+    }
   end
 
-  def import_kapp_security_policy_definitions(core_path,kapp)
+  def import_kapp_security_policy_definitions(core_path,kapp,vars)
     # ------------------------------------------------------------------------------
     # Migrate Kapp Security Policy Definitions
     # ------------------------------------------------------------------------------

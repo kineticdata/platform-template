@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bundle info *)",
+      "Bash(gem which *)",
+      "Read(//c/Users/travis.wiese/.gem/**)",
+      "Bash(ls /c/Ruby*/lib/ruby/gems/*/gems)"
+    ]
+  }
+}
