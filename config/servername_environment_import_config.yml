@@ -9,6 +9,9 @@ core:
   service_user_password: <PASSWORD>
 options:
   delete: false
+  # Optional. Restrict which phases run (skips the interactive menu when present).
+  # Values are the 1-based menu numbers and/or category keys. Omit or use [0] for ALL.
+  # categories: [10, 16]   # e.g. forms + task trees only
 task:
   # server_url: https://<SPACE>.kinops.io/app/components/task   OR https://<SERVER_NAME>.com/kinetic-task
   server_url: https://web-server.com

@@ -88,10 +88,14 @@ There is now a repository to help track changes and maintian the Kinetic Core an
 There is now an inital export of whatever was determined to be the baseline export. There are a couple of optons on how to promote the changes to another server.
 
 1. Use import.rb
-   This script migrates everthing from an export to another environment. Everything will be migrated even if the source and destination are the same.  In the case of a Form it will be updated even if it is the same and the "Updated At" date and time will be modified for all forms.  
-   
+   This script migrates everything from an export to another environment. Most artifacts are migrated even if the source and destination are the same.
+
+   **Forms are compared by content and skipped when unchanged.** Each form in the export is compared (deep-equality, ignoring server-managed keys such as `updatedAt`/`createdAt`) against the destination form fetched in the same export shape; if they are identical the form is left untouched (no needless `Updated At` churn). Any real difference triggers an update — when in doubt, the form is updated. (Cross-version migrations, e.g. 6.1→6.0, will differ and therefore always update, which is safe.)
+
    This is the sure way to update an environment to get it into sync with another.
    This script may be used at any point in time to migrate the current state contained in the export to another server.
+
+   By default the script runs every phase. You can run a subset interactively, or non-interactively via config — see **Selective Import/Export** below.
    
 2. Use import_git_diff.rb
    This script will import only the newest changes. Only the changes since the last git commit to the repository will be migrated.  This script works best when it is part of a process that is used consistently. Any one off changes made to the destination server outside of this script may get differences out of sync.  The differences are also determined from one export to another and **not** between the export definitions and the destination server.
@@ -160,9 +164,23 @@ Below is a listing of the config elements in the **Import** script and how they 
 
 options:
   delete: true
+  # Optional. Restrict which phases run. Omit (or use [0]) for ALL.
+  # Values are the 1-based numbers shown in the interactive menu, or category keys.
+  # When present, the interactive prompt is skipped (useful for unattended/CI runs).
+  categories: [10, 16]   # e.g. forms + task trees only
+
+## Selective Import/Export (Category Selection)
+Both `export.rb` and `import.rb` let you process a subset of artifact categories.
+
+- **Interactive:** when run without an `options.categories` value in the config, each script prints a numbered menu of categories. Enter a comma-separated list (e.g. `1,2,5,8`). Enter `0` (or just press Enter) to process **all** categories.
+- **Unattended:** set `options.categories` in the config (an array of the menu numbers and/or category keys). When present, the prompt is skipped.
+
+`0`/empty/omitted = all, and is the safe default. Subset selections are a power-user feature: you are responsible for prerequisites (for example, importing `forms` assumes the target kapp already exists on the destination). For finer-than-Core export granularity (specific forms, teams, or workflows only), use `export-specific.rb`, which is fully config-driven per artifact.
   
 ## Migrated Components
 Below is a list of components and what is migrated as part of the export and import process.  Not included in a migration is Space slug and name, Bundle configuration, Agent URL, Task URL, Oauth, Security, Bridges, Sources (some), and individual Handler configuration.
+
+> **Note:** `import.rb` now also imports space / user / user-profile / team **attribute definitions**, space **security policy definitions**, **teams** (with their attributes), kapp **category attribute definitions**, and **datastore submission data**. These were previously defined in the script but never invoked, so they did not migrate on a normal run. Users and source-group routine response templates still have no import path and remain manual steps. Destructive deletes for teams, forms, and datastore forms remain disabled by design.
 
 ### Space
    

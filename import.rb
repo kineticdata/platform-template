@@ -46,10 +46,58 @@ require 'find'        #For config list building
 require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
 require 'concurrent-ruby'
+require 'set'         #For category selection
 
 
 require 'kinetic_sdk'
 
+
+# ------------------------------------------------------------------------------
+# Category selection (selective import/export)
+#
+# `categories` is an ordered Array of [key(Symbol), label(String)] pairs.
+# Returns a Set of selected keys. Resolution order:
+#   1. If the config provides `options.categories` (Array of 1-based numbers and/or
+#      string keys), use it WITHOUT prompting - keeps unattended/CI runs non-blocking.
+#   2. Otherwise print a numbered menu and read a comma-separated line.
+# `0` (or empty input) selects ALL categories.
+# ------------------------------------------------------------------------------
+def normalize_category_selection(raw, categories)
+  keys = categories.map { |(key, _label)| key }
+  tokens = (raw.is_a?(Array) ? raw : raw.to_s.split(",")).map { |t| t.to_s.strip }.reject(&:empty?)
+  return keys.to_set if tokens.empty? || tokens.include?("0")
+  selected = Set.new
+  tokens.each do |token|
+    if token =~ /\A\d+\z/
+      idx = token.to_i - 1
+      selected << keys[idx] if idx >= 0 && idx < keys.length
+    elsif keys.include?(token.to_sym)
+      selected << token.to_sym
+    else
+      $logger.warn "Ignoring unknown category selection: #{token}"
+    end
+  end
+  selected
+end
+
+def select_categories(categories, vars)
+  configured = ((vars || {})["options"] || {})["categories"]
+  unless configured.nil? || (configured.is_a?(Array) && configured.empty?)
+    selected = normalize_category_selection(configured, categories)
+    $logger.info "Categories from config (options.categories): #{selected.to_a.join(', ')}"
+    return selected
+  end
+
+  puts ""
+  puts "Select categories to process (comma-separated numbers, 0 = all):"
+  categories.each_with_index { |(_key, label), i| puts "  #{i + 1}) #{label}" }
+  print "Selection [0 = all]: "
+  STDOUT.flush
+  input = (gets || "").strip
+  selected = normalize_category_selection(input, categories)
+  $logger.info "Selected categories: #{selected.to_a.join(', ')}"
+  selected
+end
 
 
 def import_space()
@@ -88,9 +136,8 @@ def import_space()
 
   max_threads = 10
   $pool = Concurrent::FixedThreadPool.new(max_threads) 
-  $mutex = Mutex.new 
+  $mutex = Mutex.new
   kapps_array = []
-  kpromises = []
 
 
 
@@ -208,15 +255,56 @@ def import_space()
     abort "Exiting Import"
   end
 
-  
+  # ----------------------------------------------------------------------------
+  # Category selection - controls which phases run. `0`/empty input, or no
+  # `options.categories` in config, selects ALL. Subset selections are a power-user
+  # feature: the caller is responsible for prerequisites (e.g. forms need the kapp
+  # to already exist on the destination). `0 = all` is the safe default.
+  # ----------------------------------------------------------------------------
+  import_categories = [
+    [:bridge_models,        "Bridge models"],
+    [:space_web_apis,       "Space web APIs"],
+    [:space_attributes,     "Space attribute definitions"],
+    [:user_attributes,      "User & user-profile attribute definitions"],
+    [:team_attributes,      "Team attribute definitions"],
+    [:teams,                "Teams"],
+    [:space_security,       "Space security policies"],
+    [:datastore_attributes, "Datastore form attribute definitions"],
+    [:kapps,                "Kapps + per-kapp config (attrs, form types, security, categories, webhooks)"],
+    [:forms,                "Forms"],
+    [:form_data,            "Kapp form submission data"],
+    [:kapp_web_apis,        "Kapp web APIs"],
+    [:datastore_data,       "Datastore submission data"],
+    [:task_handlers,        "Task handlers"],
+    [:task_routines,        "Task routines"],
+    [:task_trees,           "Task trees"],
+    [:task_categories,      "Task categories"],
+    [:task_policy_rules,    "Task policy rules"],
+    [:workflows,            "Workflows (v6)"],
+  ]
+  selected = select_categories(import_categories, vars)
 
-  import_bridge_models(core_path,vars)
+  import_bridge_models(core_path, vars) if selected.include?(:bridge_models)
 
   # ------------------------------------------------------------------------------
   # delete bridge models
   # Delete any Bridges from the destination which are missing from the import data
   # ------------------------------------------------------------------------------
-  import_space_web_apis(core_path)
+  import_space_web_apis(core_path, vars) if selected.include?(:space_web_apis)
+
+  # ------------------------------------------------------------------------------
+  # Space-level definitions and teams
+  # Imported BEFORE kapps/forms that may reference them. These methods existed but
+  # were never called (and referenced `vars` without taking it as a parameter), so
+  # these artifacts silently did not migrate on a normal run.
+  # ------------------------------------------------------------------------------
+  update_space_attributes(core_path, vars) if selected.include?(:space_attributes)
+  update_user_attributes(core_path, vars) if selected.include?(:user_attributes)
+  update_user_profile_attributes(core_path, vars) if selected.include?(:user_attributes)
+  update_team_attributes(core_path, vars) if selected.include?(:team_attributes)
+  import_space_teams(core_path, vars) if selected.include?(:teams)
+  update_security_policy(core_path, vars) if selected.include?(:space_security)
+  update_datastore_attributes(core_path, vars) if selected.include?(:datastore_attributes)
 
   # ------------------------------------------------------------------------------
   # delete space teams
@@ -227,8 +315,14 @@ def import_space()
   # import kapp data
   # ------------------------------------------------------------------------------
 
+  # Kapps are iterated sequentially (there are only a handful). The expensive
+  # per-kapp work - forms, form data, web APIs - is still parallelized on $pool
+  # inside the called methods. Running kapps sequentially avoids a thread-pool
+  # deadlock: if each kapp ran as a $pool promise that then waited on inner $pool
+  # promises, the pool could starve once #kapps approached the pool size.
+  # The loop only iterates when at least one kapp-scoped category is selected.
+  if [:kapps, :forms, :form_data, :kapp_web_apis].any? { |k| selected.include?(k) }
   Dir["#{core_path}/space/kapps/*"].each { |file|
-    kpromises << Concurrent::Promise.execute(executor: $pool) do
       begin
         kapp_slug = file.split(File::SEPARATOR).map {|x| x=="" ? File::SEPARATOR : x}.last.gsub('.json','')
         already_processed = $mutex.synchronize do
@@ -242,7 +336,12 @@ def import_space()
         next if already_processed
         kapp = {}
         kapp['slug'] = kapp_slug # set kapp_slug
-          
+
+        # Kapp create/update + per-kapp config, guarded by the :kapps category.
+        # kapp['slug'] is set above regardless, so the independently-selectable
+        # :forms / :form_data / :kapp_web_apis phases below still work when :kapps
+        # itself is not selected (assuming the kapp already exists on the destination).
+        if selected.include?(:kapps)
         if File.file?(file) or ( File.directory?(file) and File.file?(file = "#{file}.json") ) # If the file is a file or a dir with a corresponding json file
           kapp = JSON.parse( File.read(file) )
           kappExists = $space_sdk.find_kapp(kapp['slug']).code.to_i == 200  
@@ -257,6 +356,7 @@ def import_space()
         import_kapp_attribute_definitions(core_path, kapp, vars)
         import_kapp_form_attribute_definitions(core_path, kapp, vars)
         import_kapp_form_type_definitions(core_path, kapp, vars)
+        import_kapp_category_definitions(core_path, kapp, vars)
 
         import_kapp_security_policy_definitions(core_path, kapp, vars)
 
@@ -324,8 +424,11 @@ def import_space()
 
 
         
-        import_forms(core_path,kapp,vars)
-        
+        end
+        # End :kapps-guarded block. The phases below are independently selectable.
+
+        import_forms(core_path,kapp,vars) if selected.include?(:forms)
+
 
         ##TODO - Convert to csv upload
         ## PATCH https://playground-travis-wiese.kinopsdev.io/app/api/v1/kapps/kapp1/forms/f1/submissions?import
@@ -334,9 +437,9 @@ def import_space()
         # ------------------------------------------------------------------------------
         # Import Kapp Form Data
         # ------------------------------------------------------------------------------
-        
-        import_kapp_form_data(core_path, kapp)
-        import_kapp_web_apis(core_path, kapp, vars)
+
+        import_kapp_form_data(core_path, kapp) if selected.include?(:form_data)
+        import_kapp_web_apis(core_path, kapp, vars) if selected.include?(:kapp_web_apis)
       rescue => e
         slug_for_log = (defined?(kapp) && kapp.is_a?(Hash) ? kapp['slug'] : nil) || (defined?(kapp_slug) ? kapp_slug : 'unknown')
         $mutex.synchronize do
@@ -344,18 +447,27 @@ def import_space()
           $logger.error e.backtrace.join("\n")
         end
       end
-    end
+  }
+  end # end kapp-scoped category guard
 
-  } 
-  kpromises.each(&:wait!)
 
-    
   #End Kapp loop
+
+  # ------------------------------------------------------------------------------
+  # Import Datastore Submission Data
+  # Datastore form definitions import via the kapp loop above (datastore is a normal
+  # kapp). Datastore SUBMISSIONS use a distinct API (add_datastore_submission) and are
+  # imported here. NOTE: this fully replaces existing datastore submissions for each
+  # form found on disk; it is a no-op when no datastore submission files were exported.
+  # ------------------------------------------------------------------------------
+  import_datastore_data(core_path) if selected.include?(:datastore_data)
 
   # ------------------------------------------------------------------------------
   # task
   # ------------------------------------------------------------------------------
 
+  task_selected = [:task_handlers, :task_routines, :task_trees, :task_categories, :task_policy_rules].any? { |k| selected.include?(k) }
+  if task_selected
   $task_sdk = KineticSdk::Task.new({
     app_server_url: "#{vars["task"]["server_url"]}",
     username: vars["task"]["service_user_username"],
@@ -375,16 +487,16 @@ def import_space()
   # ------------------------------------------------------------------------------
 
   # import handlers forcing overwrite
-  $task_sdk.import_handlers_threaded(true) 
+  $task_sdk.import_handlers_threaded(true) if selected.include?(:task_handlers)
 
   # ------------------------------------------------------------------------------
   # Import Task Trees and Routines
   # ------------------------------------------------------------------------------
 
   # import routines and force overwrite
-  $task_sdk.import_routines_threaded(true)
+  $task_sdk.import_routines_threaded(true) if selected.include?(:task_routines)
   # import trees and force overwrite
-  $task_sdk.import_trees_threaded(true)
+  $task_sdk.import_trees_threaded(true) if selected.include?(:task_trees)
 
 
 
@@ -392,6 +504,7 @@ def import_space()
   # import task categories
   # ------------------------------------------------------------------------------
 
+  if selected.include?(:task_categories)
   sourceCategories = [] #From import data
   destinationCategoryNames = ($task_sdk.find_categories().content['categories'] || {}).map{ |category| category['name'] }
 
@@ -416,11 +529,13 @@ def import_space()
       $task_sdk.delete_category(category)
     end
   }
+  end # end :task_categories
 
   # ------------------------------------------------------------------------------
   # import task policy rules
   # ------------------------------------------------------------------------------
 
+  if selected.include?(:task_policy_rules)
   destinationPolicyRuleArray = $task_sdk.find_policy_rules().content['policyRules']
   sourcePolicyRuleArray = Dir["#{task_path}/policyRules/*.json"].map{ |file| 
       rule = JSON.parse(File.read(file))
@@ -444,11 +559,14 @@ def import_space()
       $task_sdk.delete_policy_rule(rule)
     end
   }
+  end # end :task_policy_rules
 
   # ------------------------------------------------------------------------------
   # Delete Trees and Routines not in the Source Data
+  # (runs when trees or routines were imported, to reconcile destination-only items)
   # ------------------------------------------------------------------------------
 
+  if selected.include?(:task_trees) || selected.include?(:task_routines)
   # identify Trees and Routines on destination
   destinationtrees = []
   trees = $task_sdk.find_trees().content
@@ -495,11 +613,15 @@ def import_space()
   rescue
     $logger.error "Error deleting extra trees/routines on source"
   end
+  end # end trees/routines reconciliation guard
+  end # end task_selected guard
 
 
-  # Import v6 workflows as these are not not the same as Trees and Routines
-  $logger.info "Importing workflows"
-  $space_sdk.import_workflows(vars["core"]["space_slug"])
+  # Import v6 workflows as these are not the same as Trees and Routines
+  if selected.include?(:workflows)
+    $logger.info "Importing workflows"
+    $space_sdk.import_workflows(vars["core"]["space_slug"])
+  end
 
   # ------------------------------------------------------------------------------
   # complete
@@ -525,7 +647,7 @@ end
   # Update Space Attributes
   # ------------------------------------------------------------------------------
 
-  def update_space_attributes(core_path)
+  def update_space_attributes(core_path, vars)
     sourceSpaceAttributeArray = []
     destinationSpaceAttributeArray = ($space_sdk.find_space_attribute_definitions().content['spaceAttributeDefinitions']|| {}).map { |definition|  definition['name']}
 
@@ -554,7 +676,7 @@ end
   # ------------------------------------------------------------------------------
   # Update User Attributes
   # ------------------------------------------------------------------------------
-  def update_user_attributes( core_path)
+  def update_user_attributes( core_path, vars)
     sourceUserAttributeArray = []
     destinationUserAttributeArray = ($space_sdk.find_user_attribute_definitions().content['userAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
@@ -580,7 +702,7 @@ end
   # ------------------------------------------------------------------------------
   # Update User Profile Attributes
   # ------------------------------------------------------------------------------
-  def update_user_profile_attributes(core_path)
+  def update_user_profile_attributes(core_path, vars)
     sourceUserProfileAttributeArray = []
     destinationUserProfileAttributeArray = ($space_sdk.find_user_profile_attribute_definitions().content['userProfileAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
@@ -609,7 +731,7 @@ end
   # ------------------------------------------------------------------------------
   # Update Team Attributes
   # ------------------------------------------------------------------------------
-  def update_team_attributes( core_path)
+  def update_team_attributes( core_path, vars)
     sourceTeamAttributeArray = []
     destinationTeamAttributeArray = ($space_sdk.find_team_attribute_definitions().content['teamAttributeDefinitions']|| {}).map { |definition|  definition['name']}
 
@@ -636,7 +758,7 @@ end
   # ------------------------------------------------------------------------------
   # Update Datastore Attributes
   # ------------------------------------------------------------------------------
-  def update_datastore_attributes( core_path)
+  def update_datastore_attributes( core_path, vars)
     sourceDatastoreAttributeArray = []
     destinationDatastoreAttributeArray =($space_sdk.find_datastore_form_attribute_definitions().content['datastoreFormAttributeDefinitions'] || {}).map { |definition|  definition['name']}
 
@@ -664,7 +786,7 @@ end
   # ------------------------------------------------------------------------------
   # Update Security Policy
   # ------------------------------------------------------------------------------
-  def update_security_policy( core_path)
+  def update_security_policy( core_path, vars)
     sourceSecurityPolicyArray = []
     destinationSecurityPolicyArray = ($space_sdk.find_space_security_policy_definitions().content['securityPolicyDefinitions'] || {}).map { |definition|  definition['name']}
 
@@ -686,19 +808,6 @@ end
       end
     }
   end
-
-  # ------------------------------------------------------------------------------
-  # Delete Space Web APIs
-  # Delete any Web APIs from the destination which are missing from the import data
-  # ------------------------------------------------------------------------------
-  def delete_space_web_apis( core_path)
-    destinationSpaceWebApisArray.each { | webApi |
-      if vars["options"]["delete"] && !sourceSpaceWebApisArray.include?(webApi)
-          $space_sdk.delete_space_webapi(webApi)
-      end
-    }
-  end
-
 
   # ------------------------------------------------------------------------------
   # import datastore forms
@@ -770,22 +879,16 @@ end
   # import space teams
   # ------------------------------------------------------------------------------
 
-  def import_space_teams( core_path)
-    
-    if (teams = Dir["#{core_path}/space/teams/*.json"]).length > 0 
+  def import_space_teams( core_path, vars)
+
+    if (teams = Dir["#{core_path}/space/teams/*.json"]).length > 0
       sourceTeamArray = []
       destinationTeamsArray = ($space_sdk.find_teams({"include"=>"details"}).content['teams'] || {}).map{ |team| {"slug" => team['slug'], "name"=>team['name'], "updatedAt"=>team['updatedAt']} }
       teams.each{ |team|
         body = JSON.parse(File.read(team))
         destinationTeam = destinationTeamsArray.find {|destination_team| destination_team['slug'] == body['slug']}
-        if !destination_team.nil?
-          #If no updates, skip
-          if destination_team['updatedAt'] != team['updatedAt']
-            $space_sdk.update_team(body['slug'], body)
-          else
-
-          end
-
+        if !destinationTeam.nil?
+          $space_sdk.update_team(body['slug'], body)
         else
           $space_sdk.add_team(body)
         end
@@ -796,8 +899,7 @@ end
         sourceTeamArray.push({'name' => body['name'], 'slug'=>body['slug']} )
       }
       destinationTeamsArray.each { |team|
-        #if !SourceTeamArray.include?(team)
-        if sourceTeamArray.find {|source_team| source_team['slug'] == team['slug']  }.nil?
+        if vars["options"]["delete"] && sourceTeamArray.find {|source_team| source_team['slug'] == team['slug']  }.nil?
           #Delete has been disabled.  It is potentially too dangerous to include w/o advanced knowledge.
           #$space_sdk.delete_team(team['slug'])
         end
@@ -953,8 +1055,46 @@ def convert_json_to_csv(json_file)
     end
   end
 
-  def compare_forms(kapp_slug, old_form)
+  # ------------------------------------------------------------------------------
+  # Form content comparison (skip-if-unchanged)
+  #
+  # Both sides are compared in the same "export" shape: local files are export_space
+  # output, and the destination is fetched via fetch_all_forms(kapp, {'export'=>'true'}).
+  # We deep-compare the full definition after recursively stripping a MINIMAL set of
+  # volatile, server-managed keys.
+  #
+  # PRINCIPLE: when in doubt, UPDATE. Never add a meaningful key to the strip list - a
+  # false "unchanged" would silently drop a real change. (This comparison is on by
+  # default, so correctness here matters more than maximizing skips.)
+  #
+  # CROSS-VERSION NOTE: a 6.1 -> 6.0 migration (or any export-method shape delta such as
+  # defaultDataSource / choicesDataSource / renderAttributes.width) will simply differ and
+  # trigger an update - which is safe and matches the prior "always update" behavior.
+  # Same-version, same-shape forms compare equal and are skipped.
+  # ------------------------------------------------------------------------------
+  FORM_COMPARE_STRIP_KEYS = %w[updatedAt createdAt updatedBy createdBy version].freeze
 
+  # Recursively remove volatile/server-managed keys so two export payloads can be
+  # compared on content alone.
+  def strip_volatile_keys(value)
+    case value
+    when Hash
+      value.each_with_object({}) do |(k, v), acc|
+        next if FORM_COMPARE_STRIP_KEYS.include?(k)
+        acc[k] = strip_volatile_keys(v)
+      end
+    when Array
+      value.map { |v| strip_volatile_keys(v) }
+    else
+      value
+    end
+  end
+
+  # True when the local export form and the destination form are equivalent in content.
+  # Ruby Hash#== is recursive and order-independent, so normalized hashes compare cleanly.
+  def forms_equivalent?(local_form, remote_form)
+    return false if local_form.nil? || remote_form.nil?
+    strip_volatile_keys(local_form) == strip_volatile_keys(remote_form)
   end
 
   # ------------------------------------------------------------------------------
@@ -1064,7 +1204,7 @@ def convert_json_to_csv(json_file)
   # Import Space Web APIs
   # ------------------------------------------------------------------------------
 
-  def import_space_web_apis(core_path)
+  def import_space_web_apis(core_path, vars)
     sourceSpaceWebApisArray = []
     destinationSpaceWebApisArray = ($space_sdk.find_space_webapis().content['webApis'] || {}).map { |definition|  definition['slug']}
     promises = []
@@ -1077,12 +1217,22 @@ def convert_json_to_csv(json_file)
           else
             $space_sdk.add_space_webapi(body)
           end
-          sourceSpaceWebApisArray.push(body['slug'])
-        rescue
+          $mutex.synchronize { sourceSpaceWebApisArray.push(body['slug']) }
+        rescue => e
+          $mutex.synchronize { $logger.error("Failed to import space web api from #{file}: #{e.class}: #{e.message}") }
         end
       end
     }
     promises.each(&:wait!)
+
+    # ------------------------------------------------------------------------------
+    # Delete Space Web APIs not present in source
+    # ------------------------------------------------------------------------------
+    destinationSpaceWebApisArray.each { |webApi|
+      if vars["options"]["delete"] && !sourceSpaceWebApisArray.include?(webApi)
+        $space_sdk.delete_space_webapi(webApi)
+      end
+    }
   end
   # ------------------------------------------------------------------------------
   # Migrate Kapp Attribute Definitions
@@ -1168,19 +1318,14 @@ def convert_json_to_csv(json_file)
 
             prev_form = (destinationForms.find { |f| f["slug"] == form['slug'] })
             if !prev_form.nil?
-              #Compare old and new forms
-              #$space_sdk.compare_forms(destinationForms["#{form['slug']}"], form )
-              #Check last updated date/time and compare
-              $mutex.synchronize { $logger.info("Comparing previous and current form exports for #{form['slug']}") }
-              match = !form['updatedAt'].nil? &&
-                      !prev_form['updatedAt'].nil? &&
-                      form['updatedAt'] == prev_form['updatedAt']
-              #Skip if forms match
-              if !match
+              # Content comparison: skip the update when the destination form is already
+              # identical to the source export (ignoring volatile keys). When in doubt we
+              # UPDATE - see forms_equivalent? for the rationale.
+              if forms_equivalent?(form, prev_form)
+                $mutex.synchronize { $logger.info("Form #{form['slug']} unchanged, skipping...") }
+              else
                 $mutex.synchronize { $logger.info("Updating form #{form['slug']}") }
                 $space_sdk.update_form(kapp['slug'] ,form['slug'], form)
-              else
-                $mutex.synchronize { $logger.info("Form #{form['slug']} updatedAt values match, skipping...") }
               end
             else
               $mutex.synchronize { $logger.info("Adding new form #{form['slug']}") }

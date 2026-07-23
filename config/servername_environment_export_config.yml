@@ -7,6 +7,9 @@ core:
   service_user_username: <USER_NAME>
   service_user_password: <PASSWORD>
 options:
+  # Optional. Restrict which categories are exported (skips the interactive menu when present).
+  # Values are the 1-based menu numbers and/or category keys. Omit or use [0] for ALL.
+  # categories: [1, 3]   # e.g. Core space + task trees only
   SUBMISSIONS_TO_EXPORT:
   - datastore: #{true:false}
     formSlug: #FORM_SLUG

@@ -60,6 +60,7 @@ require 'find'        #For config list building
 require 'io/console'  #For password request
 require 'base64'      #For pwd encoding
 require 'concurrent-ruby'
+require 'set'         #For category selection
 require 'kinetic_sdk'
 # $LOAD_PATH.unshift('C:\Users\travis.wiese\Source\repos\kinetic-sdk-rb\lib')
 
@@ -160,6 +161,52 @@ def config_selection(config_folder_path)
   return configFile
 end
 
+# ------------------------------------------------------------------------------
+# Category selection (selective export)
+#
+# `categories` is an ordered Array of [key(Symbol), label(String)] pairs.
+# Returns a Set of selected keys. Resolution order:
+#   1. If config provides `options.categories` (Array of 1-based numbers and/or
+#      string keys), use it WITHOUT prompting - keeps unattended/CI runs non-blocking.
+#   2. Otherwise print a numbered menu and read a comma-separated line.
+# `0` (or empty input) selects ALL categories.
+# ------------------------------------------------------------------------------
+def normalize_category_selection(raw, categories)
+  keys = categories.map { |(key, _label)| key }
+  tokens = (raw.is_a?(Array) ? raw : raw.to_s.split(",")).map { |t| t.to_s.strip }.reject(&:empty?)
+  return keys.to_set if tokens.empty? || tokens.include?("0")
+  selected = Set.new
+  tokens.each do |token|
+    if token =~ /\A\d+\z/
+      idx = token.to_i - 1
+      selected << keys[idx] if idx >= 0 && idx < keys.length
+    elsif keys.include?(token.to_sym)
+      selected << token.to_sym
+    else
+      $logger.warn "Ignoring unknown category selection: #{token}"
+    end
+  end
+  selected
+end
+
+def select_categories(categories, vars)
+  configured = ((vars || {})["options"] || {})["categories"]
+  unless configured.nil? || (configured.is_a?(Array) && configured.empty?)
+    selected = normalize_category_selection(configured, categories)
+    $logger.info "Categories from config (options.categories): #{selected.to_a.join(', ')}"
+    return selected
+  end
+
+  puts ""
+  puts "Select categories to export (comma-separated numbers, 0 = all):"
+  categories.each_with_index { |(_key, label), i| puts "  #{i + 1}) #{label}" }
+  print "Selection [0 = all]: "
+  STDOUT.flush
+  input = (gets || "").strip
+  selected = normalize_category_selection(input, categories)
+  $logger.info "Selected categories: #{selected.to_a.join(', ')}"
+  selected
+end
 
 #End method
 
@@ -383,13 +430,35 @@ end
 
 $logger.info "Validating connection to Cors and Task was Successful"
 
+# ----------------------------------------------------------------------------
+# Category selection - controls which phases run. `0`/empty input, or no
+# `options.categories` in config, selects ALL. `0 = all` is the safe default.
+# For finer-than-Core granularity (specific forms/teams only) use export-specific.rb,
+# which is config-driven per artifact type.
+# ----------------------------------------------------------------------------
+export_categories = [
+  [:core,              "Core space (kapps, forms, web APIs, models, webhooks, attribute & security definitions, teams) - via export_space"],
+  [:submissions,       "Submission data (per options.SUBMISSIONS_TO_EXPORT)"],
+  [:task_trees,        "Task trees"],
+  [:task_sources,      "Task sources"],
+  [:task_groups,       "Task groups"],
+  [:task_policy_rules, "Task policy rules"],
+  [:task_categories,   "Task categories"],
+  [:task_access_keys,  "Task access keys"],
+  [:task_handlers,     "Task handlers"],
+  [:task_routines,     "Task routines"],
+]
+selected = select_categories(export_categories, vars)
+
 # ------------------------------------------------------------------------------
 # core
 # ------------------------------------------------------------------------------
 
-##Clear old folder/files
-$logger.info "Removing files and folders from the existing \"#{template_name}\" template."
-FileUtils.rm_rf Dir.glob("#{core_path}/*")
+##Clear old folder/files (only when re-exporting Core)
+if selected.include?(:core)
+  $logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+  FileUtils.rm_rf Dir.glob("#{core_path}/*")
+end
 
 $logger.info "Setting up the Core SDK"
 
@@ -398,12 +467,14 @@ $logger.info "Exporting the core components for the \"#{template_name}\" templat
 $logger.info "  exporting with api: #{$space_sdk.api_url}"
 $logger.info "   - exporting configuration data (Kapps,forms, etc)"
 core_thread = Thread.new do
-  $space_sdk.export_space
-  # cleanup properties that should not be committed with export
-  # bridge keys
   max_threads=30
   pool = Concurrent::FixedThreadPool.new(max_threads)
   promises = []
+
+  if selected.include?(:core)
+  $space_sdk.export_space
+  # cleanup properties that should not be committed with export
+  # bridge keys
 
   Dir["#{core_path}/space/bridges/*.json"].each do |filename|
     promises << Concurrent::Promise.execute(executor: pool) do
@@ -449,16 +520,23 @@ core_thread = Thread.new do
     end
   end
   dir_promises.each(&:wait!)
+  end # end :core
 
 
   ####################################################################
   ## Look to method and thread here
   ####################################################################
 
+  if selected.include?(:submissions)
   #TODO - Flag for submissions to export
   # export submissions
   $logger.info "Exporting and writing submission data"
-  (SUBMISSIONS_TO_EXPORT || []).delete_if{ |item| item["kappSlug"].nil?}.each do |item|
+  # Keep both datastore and kapp submission entries. Every entry needs a formSlug;
+  # kapp (non-datastore) entries also need a kappSlug. The previous filter dropped
+  # every item without a kappSlug, which silently excluded ALL datastore submissions.
+  (SUBMISSIONS_TO_EXPORT || []).reject { |item|
+    item["formSlug"].nil? || (!item["datastore"] && item["kappSlug"].nil?)
+  }.each do |item|
     promises << Concurrent::Promise.execute(executor: pool) do
       is_datastore = item["datastore"] || false
       $logger.info "Exporting - #{is_datastore ? 'datastore' : 'kapp'} form #{item['formSlug']}"
@@ -570,9 +648,11 @@ core_thread = Thread.new do
     end
   end
   promises.each(&:wait!)
+  $logger.info "  - submission data export complete"
+  end # end :submissions
+
   pool.shutdown
   pool.wait_for_termination
-  $logger.info "  - submission data export complete"
 end
 
 
@@ -581,17 +661,21 @@ end
 # task
 # ------------------------------------------------------------------------------
 task_thread = Thread.new do
+  any_task = [:task_trees, :task_sources, :task_groups, :task_policy_rules, :task_categories, :task_access_keys, :task_handlers, :task_routines].any? { |k| selected.include?(k) }
 
   max_threads=30
   pool = Concurrent::FixedThreadPool.new(max_threads)
-  $logger.info "Removing files and folders from the existing \"#{template_name}\" template."
-  FileUtils.rm_rf Dir.glob("#{task_path}/*")
+  if any_task
+    $logger.info "Removing files and folders from the existing \"#{template_name}\" template."
+    FileUtils.rm_rf Dir.glob("#{task_path}/*")
+  end
 
   $logger.info "Exporting the task components for the \"#{template_name}\" template."
   $logger.info "  exporting with api: #{$task_sdk.api_url}"
 
   # export all sources, trees, routines, handlers,
   # groups, policy rules, categories, and access keys
+  if selected.include?(:task_trees)
   tree_promises = []
   $task_sdk.find_sources().content['sourceRoots'].each do |source|
     $task_sdk.find_trees({ "source" => source['name'], "limit" => 1000 }).content['trees'].each do |tree|
@@ -601,26 +685,30 @@ task_thread = Thread.new do
     end
   end
   tree_promises.each(&:wait!)
+  end # end :task_trees
 
   #Is above tied to below?
-  #TODO - Add flags/logic to have ability to be selective on what's exported/imported
-  task_promises = [
-    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_sources() },
-    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_groups() },
-    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_policy_rules() },
-    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_categories() },
-    Concurrent::Promise.execute(executor: pool) { $task_sdk.export_access_keys() }
-  ]
+  # Each task export is selectable independently (0 = all).
+  task_promises = []
+  task_promises << Concurrent::Promise.execute(executor: pool) { $task_sdk.export_sources() } if selected.include?(:task_sources)
+  task_promises << Concurrent::Promise.execute(executor: pool) { $task_sdk.export_groups() } if selected.include?(:task_groups)
+  task_promises << Concurrent::Promise.execute(executor: pool) { $task_sdk.export_policy_rules() } if selected.include?(:task_policy_rules)
+  task_promises << Concurrent::Promise.execute(executor: pool) { $task_sdk.export_categories() } if selected.include?(:task_categories)
+  task_promises << Concurrent::Promise.execute(executor: pool) { $task_sdk.export_access_keys() } if selected.include?(:task_access_keys)
   #NOTE - HARD LIMIT AT 1000 - would need date iteration for more
-  $task_sdk.find_handlers({ "limit" => 1000 }).content["handlers"].each do |handler|
-    task_promises << Concurrent::Promise.execute(executor: pool) do
-      $task_sdk.export_handler(handler['definitionId'])
+  if selected.include?(:task_handlers)
+    $task_sdk.find_handlers({ "limit" => 1000 }).content["handlers"].each do |handler|
+      task_promises << Concurrent::Promise.execute(executor: pool) do
+        $task_sdk.export_handler(handler['definitionId'])
+      end
     end
   end
   #NOTE - HARD LIMIT AT 1000 - would need date iteration for more
-  $task_sdk.find_routines({ "limit" => 1000 }).content["trees"].each do |routine|
-    task_promises << Concurrent::Promise.execute(executor: pool) do
-      $task_sdk.export_tree(routine['title'])
+  if selected.include?(:task_routines)
+    $task_sdk.find_routines({ "limit" => 1000 }).content["trees"].each do |routine|
+      task_promises << Concurrent::Promise.execute(executor: pool) do
+        $task_sdk.export_tree(routine['title'])
+      end
     end
   end
   task_promises.each(&:wait!)
